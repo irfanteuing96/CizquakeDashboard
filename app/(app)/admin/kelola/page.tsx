@@ -96,8 +96,8 @@ function UserForm({ u, branches, isSelf, onClose, onDone }: { u: any; branches: 
           <legend className="mb-1 text-sm font-medium">Cabang tempat login</legend>
           <div className="grid grid-cols-2 gap-1.5">
             {branches.filter((b) => b.active).map((b) => (
-              <label key={b.id} className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${f.branchIds.includes(b.id) ? 'border-brand bg-brand-soft' : 'border-line bg-white'}`}>
-                <input type="checkbox" className="h-4 w-4 accent-[#c98a00]" checked={f.branchIds.includes(b.id)} onChange={() => toggle(b.id)} />
+              <label key={b.id} className={`flex min-h-11 items-center gap-2 rounded-2xl border-2 px-3 text-sm font-bold ${f.branchIds.includes(b.id) ? 'border-ink bg-brand' : 'border-line bg-white'}`}>
+                <input type="checkbox" className="h-4 w-4 accent-[#2b1613]" checked={f.branchIds.includes(b.id)} onChange={() => toggle(b.id)} />
                 {b.name}
               </label>
             ))}
@@ -107,7 +107,7 @@ function UserForm({ u, branches, isSelf, onClose, onDone }: { u: any; branches: 
       )}
       {f.id && !isSelf ? (
         <label className="flex min-h-11 items-center gap-2 text-sm">
-          <input type="checkbox" className="h-4 w-4 accent-[#c98a00]" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />
+          <input type="checkbox" className="h-4 w-4 accent-[#2b1613]" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />
           Akun aktif (hilangkan centang untuk karyawan yang sudah keluar)
         </label>
       ) : null}
@@ -141,12 +141,12 @@ function BranchForm({ b, onClose, onDone }: { b: any; onClose: () => void; onDon
       <Field label="Nama cabang"><input className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required maxLength={40} /></Field>
       {f.id ? <Pair label="Koreksi stok" mini={f.mini} medium={f.medium} onChange={(mini, medium) => setF({ ...f, mini, medium })} /> : null}
       <label className="flex min-h-11 items-center gap-2 text-sm">
-        <input type="checkbox" className="h-4 w-4 accent-[#c98a00]" checked={f.is_pusat} onChange={(e) => setF({ ...f, is_pusat: e.target.checked })} />
+        <input type="checkbox" className="h-4 w-4 accent-[#2b1613]" checked={f.is_pusat} onChange={(e) => setF({ ...f, is_pusat: e.target.checked })} />
         Cabang pusat
       </label>
       {f.id ? (
         <label className="flex min-h-11 items-center gap-2 text-sm">
-          <input type="checkbox" className="h-4 w-4 accent-[#c98a00]" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />
+          <input type="checkbox" className="h-4 w-4 accent-[#2b1613]" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />
           Cabang aktif
         </label>
       ) : null}

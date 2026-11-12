@@ -28,13 +28,13 @@ export function ShipmentCard({ s, canReceive, canCancel, onDone }: { s: any; can
   }
 
   return (
-    <div className={`anim-up rounded-2xl border bg-white p-4 ${sent ? 'border-amber-300' : 'border-line'}`}>
+    <div className={`anim-up sticker rounded-3xl p-4 ${sent ? 'bg-brand-soft' : 'bg-white'}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="font-semibold">{s.from_name || 'Produksi'} → {s.to_name}</div>
+          <div className="font-display font-extrabold">{s.from_name || 'Produksi'} → {s.to_name}</div>
           <div className="text-xs text-muted">{fmtDateTime(s.created_at)} · oleh {s.created_name || '—'}</div>
         </div>
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${sent ? 'bg-amber-100 text-amber-800' : s.status === 'received' ? 'bg-green-100 text-green-800' : 'bg-stone-100 text-stone-600'}`}>
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${sent ? 'bg-ink text-brand' : s.status === 'received' ? 'bg-green-100 text-green-800' : 'bg-stone-100 text-stone-600'}`}>
           {sent ? 'Dikirim' : s.status === 'received' ? 'Diterima ✅' : 'Dibatalkan'}
         </span>
       </div>

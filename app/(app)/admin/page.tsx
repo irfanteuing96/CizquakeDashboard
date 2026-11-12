@@ -20,7 +20,7 @@ export default function AdminHome() {
     <>
       <div className="flex items-center gap-2">
         <Btn variant="ghost" small aria-label="Hari sebelumnya" onClick={() => setDate(addDays(date, -1))}>◀</Btn>
-        <input type="date" aria-label="Tanggal" className={`${inputCls} flex-1 text-center font-semibold`} value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} />
+        <input type="date" aria-label="Tanggal" className={`${inputCls} flex-1 !rounded-full !border-ink text-center font-display !font-extrabold`} value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} />
         <Btn variant="ghost" small aria-label="Hari berikutnya" disabled={date >= today} onClick={() => setDate(addDays(date, 1))}>▶</Btn>
       </div>
       <p className="-mt-2 text-center text-xs text-muted">{fmtDate(date, true)}{date === today ? ' · hari ini · diperbarui otomatis' : ''}</p>
@@ -47,7 +47,7 @@ export default function AdminHome() {
           </Card>
 
           {data.shipments.length > 0 && (
-            <Card className="!border-amber-300 !bg-amber-50">
+            <Card className="!bg-brand-soft">
               <H>🚚 Kiriman belum dikonfirmasi ({data.shipments.length})</H>
               <ul className="space-y-1 text-sm">
                 {data.shipments.map((s: any) => (
@@ -57,25 +57,25 @@ export default function AdminHome() {
             </Card>
           )}
 
-          <h2 className="pt-1 text-sm font-semibold uppercase tracking-wide text-muted">Per cabang</h2>
+          <h2 className="pt-1 text-xl font-extrabold">Per cabang</h2>
           <div className="stagger grid gap-4 sm:grid-cols-2">
             {data.branches.map((b: any) => {
               const att = data.attendance.filter((a: any) => a.branch_id === b.id);
               const reps = reports.filter((r) => r.branch_id === b.id);
-              const tone = (n: number, low: number) => (n <= 0 ? 'text-red-700' : n <= low ? 'text-amber-700' : '');
+              const tone = (n: number, _low: number) => (n <= 0 ? 'text-red-800' : 'text-ink');
               return (
                 <Card key={b.id} className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-lg font-bold">{b.name}{b.is_pusat ? <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold">Pusat</span> : null}</div>
+                    <h3 className="text-xl font-extrabold">{b.name}{b.is_pusat ? <span className="ml-2 rounded-full bg-ink px-2.5 py-1 align-middle text-[10px] font-extrabold uppercase tracking-widest text-brand">Pusat</span> : null}</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-xl bg-brand-soft p-2"><div className="text-xs text-muted">Mini</div><div className={`text-3xl font-bold tabular-nums ${tone(b.mini, 15)}`}><CountUp value={b.mini} /></div></div>
-                    <div className="rounded-xl bg-brand-soft p-2"><div className="text-xs text-muted">Medium</div><div className={`text-3xl font-bold tabular-nums ${tone(b.medium, 3)}`}><CountUp value={b.medium} /></div></div>
+                    <div className="rounded-2xl border-2 border-ink bg-brand p-2.5"><div className="text-[10px] font-extrabold uppercase tracking-widest text-ink/75">Mini</div><div className={`num text-4xl tabular-nums ${tone(b.mini, 15)}`}><CountUp value={b.mini} /></div></div>
+                    <div className="rounded-2xl border-2 border-ink bg-brand p-2.5"><div className="text-[10px] font-extrabold uppercase tracking-widest text-ink/75">Medium</div><div className={`num text-4xl tabular-nums ${tone(b.medium, 3)}`}><CountUp value={b.medium} /></div></div>
                   </div>
                   <div className="-mt-1 text-xs text-muted">{b.stock_updated_at ? `Stok diperbarui ${fmtDateTime(b.stock_updated_at)} · ${b.stock_updated_by}` : 'Stok belum diisi'}</div>
 
                   <div>
-                    <div className="mb-1 text-xs font-semibold text-muted">ABSEN</div>
+                    <div className="mb-1 text-[10px] font-extrabold uppercase tracking-widest text-muted">ABSEN</div>
                     {att.length === 0 ? <div className="text-sm text-muted">Belum ada yang check in.</div> : (
                       <ul className="text-sm">
                         {att.map((a: any) => (
@@ -89,7 +89,7 @@ export default function AdminHome() {
                   </div>
 
                   <div>
-                    <div className="mb-1 text-xs font-semibold text-muted">LAPORAN</div>
+                    <div className="mb-1 text-[10px] font-extrabold uppercase tracking-widest text-muted">LAPORAN</div>
                     {reps.length === 0 ? <div className="text-sm text-muted">Belum ada laporan.</div> : reps.map((r) => (
                       <div key={r.id} className="border-t border-line first:border-0">
                         <button className="flex w-full items-center justify-between gap-2 py-1.5 text-left text-sm" onClick={() => setOpenRep(openRep === r.id ? null : r.id)} aria-expanded={openRep === r.id}>
@@ -102,10 +102,10 @@ export default function AdminHome() {
                   </div>
 
                   <div>
-                    <div className="mb-1 flex items-center justify-between text-xs font-semibold text-muted">
+                    <div className="mb-1 flex items-center justify-between text-[10px] font-extrabold uppercase tracking-widest text-muted">
                       <span>PERLU RESTOCK</span>
                       {b.restock?.length > 0 && (
-                        <button className="font-semibold text-brand-dark underline" onClick={async () => { if (confirm(`Tandai restock ${b.name} sudah dikirim semua?`)) { await api('admin/restock/clear', { branchId: b.id }); reload(); } }}>Tandai selesai</button>
+                        <button className="font-semibold text-ink underline decoration-brand decoration-2 underline-offset-2" onClick={async () => { if (confirm(`Tandai restock ${b.name} sudah dikirim semua?`)) { await api('admin/restock/clear', { branchId: b.id }); reload(); } }}>Tandai selesai</button>
                       )}
                     </div>
                     <RestockChips list={b.restock} />

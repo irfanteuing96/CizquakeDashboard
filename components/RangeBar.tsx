@@ -16,12 +16,12 @@ export function RangeBar({ value, onChange, branches }: { value: Range; onChange
     ['Bulan ini', t.slice(0, 8) + '01', t],
   ];
   return (
-    <div className="space-y-2 rounded-2xl border border-line bg-white p-3">
+    <div className="sticker space-y-2 rounded-3xl bg-white p-3">
       <div className="flex flex-wrap gap-1.5">
         {presets.map(([label, f, to]) => {
           const on = value.from === f && value.to === to;
           return (
-            <button key={label} onClick={() => onChange({ ...value, from: f, to })} className={`press min-h-9 rounded-full border px-3 text-sm font-medium ${on ? 'anim-jelly border-brand bg-brand-soft' : 'border-line text-muted'}`}>{label}</button>
+            <button key={label} onClick={() => onChange({ ...value, from: f, to })} className={`press min-h-9 rounded-full border-2 px-3 font-display text-xs font-extrabold ${on ? 'anim-jelly border-ink bg-brand text-ink' : 'border-line text-muted'}`}>{label}</button>
           );
         })}
       </div>
@@ -41,9 +41,9 @@ export function RangeBar({ value, onChange, branches }: { value: Range; onChange
 
 export function Stat({ label, value, sub, format }: { label: string; value: number; sub?: string; format?: (n: number) => string }) {
   return (
-    <div className="rounded-2xl border border-line bg-white p-3">
-      <div className="text-xs font-medium text-muted">{label}</div>
-      <div className="text-2xl font-bold tabular-nums"><CountUp value={value} format={format} /></div>
+    <div className="sticker rounded-3xl bg-white p-3">
+      <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted">{label}</div>
+      <div className="num text-2xl tabular-nums"><CountUp value={value} format={format} /></div>
       {sub ? <div className="text-xs text-muted">{sub}</div> : null}
     </div>
   );

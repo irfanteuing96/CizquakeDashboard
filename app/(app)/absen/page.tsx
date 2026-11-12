@@ -38,9 +38,9 @@ export default function Absen() {
         <H>Absen</H>
         {open ? (
           <div className="space-y-3">
-            <div className="anim-pop pulse-ring rounded-xl bg-brand-soft p-3">
-              <div className="text-xs text-muted">Check in · {fmtDate(open.work_date, true)} · shift {open.shift} · {open.branch_name}</div>
-              <div className="text-3xl font-bold tabular-nums">{fmtTime(open.check_in)}</div>
+            <div className="anim-pop pulse-ring rounded-2xl border-2 border-ink bg-brand p-3">
+              <div className="text-xs font-bold text-ink/75">Check in · {fmtDate(open.work_date, true)} · shift {open.shift} · {open.branch_name}</div>
+              <div className="num text-5xl tabular-nums">{fmtTime(open.check_in)}</div>
             </div>
             <Btn variant="dark" className="w-full" busy={busy} onClick={() => act('out')}>Check out sekarang</Btn>
           </div>

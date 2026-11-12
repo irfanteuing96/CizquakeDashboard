@@ -4,13 +4,13 @@ import { LEVELS, RESTOCK_ITEMS } from '@/lib/client';
 import { CountUp } from './fx';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-2xl border border-line bg-white p-4 shadow-sm ${className}`}>{children}</div>;
+  return <div className={`sticker rounded-3xl bg-white p-4 ${className}`}>{children}</div>;
 }
 
 export function H({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
-    <div className="mb-2 flex items-center justify-between gap-2">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{children}</h2>
+    <div className="mb-3 flex items-center justify-between gap-2">
+      <h2 className="rounded-full bg-ink px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-brand">{children}</h2>
       {right}
     </div>
   );
@@ -19,28 +19,28 @@ export function H({ children, right }: { children: ReactNode; right?: ReactNode 
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' | 'dark'; small?: boolean; busy?: boolean };
 export function Btn({ variant = 'primary', small, busy, className = '', children, disabled, ...p }: BtnProps) {
   const v = {
-    primary: 'bg-brand text-ink hover:bg-brand-dark active:bg-brand-dark',
-    dark: 'bg-ink text-white',
-    ghost: 'bg-white border border-line text-ink',
-    danger: 'bg-white border border-red-200 text-red-700',
+    primary: 'sticker-sm btn-pop bg-brand text-ink',
+    dark: 'btn-pop border-2 border-ink bg-ink text-brand shadow-[0_3px_0_#fabd00]',
+    ghost: 'sticker-sm btn-pop bg-white text-ink',
+    danger: 'press border-2 border-red-700 bg-white text-red-700',
   }[variant];
   return (
     <button
       {...p}
       disabled={disabled || busy}
-      className={`press inline-flex items-center justify-center gap-1 rounded-xl font-semibold disabled:opacity-50 ${small ? 'min-h-9 px-3 text-sm' : 'min-h-12 px-4 text-base'} ${v} ${className}`}
+      className={`inline-flex items-center justify-center gap-1 rounded-full font-display font-extrabold disabled:opacity-50 ${small ? 'min-h-9 px-3.5 text-xs' : 'min-h-12 px-5 text-[15px]'} ${v} ${className}`}
     >
       {busy ? 'Menyimpan…' : children}
     </button>
   );
 }
 
-export const inputCls = 'w-full min-h-11 rounded-xl border border-line bg-white px-3 py-2 outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft';
+export const inputCls = 'w-full min-h-11 rounded-2xl border-2 border-line bg-white px-3 py-2 font-semibold outline-none transition-colors focus:border-ink focus:ring-4 focus:ring-brand-soft';
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-ink">{label}</span>
+      <span className="mb-1 block text-sm font-bold text-ink">{label}</span>
       {children}
       {hint ? <span className="mt-1 block text-xs text-muted">{hint}</span> : null}
     </label>
@@ -66,7 +66,7 @@ export function Num({ value, onChange, placeholder = '0', money, className = '',
 export function Pair({ label, mini, medium, onChange }: { label?: string; mini: number; medium: number; onChange: (mini: number, medium: number) => void }) {
   return (
     <div>
-      {label ? <div className="mb-1 text-sm font-medium">{label}</div> : null}
+      {label ? <div className="mb-1 text-sm font-bold">{label}</div> : null}
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
           <span className="mb-0.5 block text-xs text-muted">Mini box</span>
@@ -82,24 +82,24 @@ export function Pair({ label, mini, medium, onChange }: { label?: string; mini: 
 }
 
 export function StockBig({ mini, medium }: { mini: number; medium: number }) {
-  const tone = (n: number, low: number) => (n <= 0 ? 'text-red-700' : n <= low ? 'text-amber-700' : 'text-ink');
+  const tone = (n: number, _low: number) => (n <= 0 ? 'text-red-800' : 'text-ink');
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div className="rounded-xl bg-brand-soft p-3">
-        <div className="text-xs font-medium text-muted">Mini box</div>
-        <div className={`text-4xl font-bold tabular-nums ${tone(mini, 15)}`}><CountUp value={mini} /></div>
+      <div className="rounded-2xl border-2 border-ink bg-brand p-3">
+        <div className="text-[11px] font-extrabold uppercase tracking-widest text-ink/75">Mini box</div>
+        <div className={`num text-5xl tabular-nums ${tone(mini, 15)}`}><CountUp value={mini} /></div>
       </div>
-      <div className="rounded-xl bg-brand-soft p-3">
-        <div className="text-xs font-medium text-muted">Medium box</div>
-        <div className={`text-4xl font-bold tabular-nums ${tone(medium, 3)}`}><CountUp value={medium} /></div>
+      <div className="rounded-2xl border-2 border-ink bg-brand p-3">
+        <div className="text-[11px] font-extrabold uppercase tracking-widest text-ink/75">Medium box</div>
+        <div className={`num text-5xl tabular-nums ${tone(medium, 3)}`}><CountUp value={medium} /></div>
       </div>
     </div>
   );
 }
 
 export function Msg({ error, ok }: { error?: string | null; ok?: string | null }) {
-  if (error) return <div role="alert" className="anim-wiggle rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>;
-  if (ok) return <div role="status" className="anim-pop rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">{ok}</div>;
+  if (error) return <div role="alert" className="anim-wiggle rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>;
+  if (ok) return <div role="status" className="anim-pop rounded-2xl border-2 border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">{ok}</div>;
   return null;
 }
 
@@ -114,9 +114,9 @@ export function Loading() {
 
 export function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange: (v: T) => void; items: [T, string][] }) {
   return (
-    <div className="flex gap-1 rounded-xl bg-brand-soft p-1">
+    <div className="flex gap-1 rounded-full border-2 border-ink bg-white p-1">
       {items.map(([k, label]) => (
-        <button key={k} onClick={() => onChange(k)} className={`press min-h-10 flex-1 rounded-lg px-2 text-sm font-semibold ${value === k ? 'anim-jelly bg-white shadow-sm' : 'text-muted'}`}>
+        <button key={k} onClick={() => onChange(k)} className={`press min-h-10 flex-1 rounded-full px-2 font-display text-xs font-extrabold ${value === k ? 'anim-jelly bg-brand text-ink' : 'text-muted'}`}>
           {label}
         </button>
       ))}
@@ -125,14 +125,14 @@ export function Tabs<T extends string>({ value, onChange, items }: { value: T; o
 }
 
 export type Restock = { item: string; level: string };
-const levelTone: Record<string, string> = { habis: 'bg-red-50 text-red-800 border-red-200', sedikit: 'bg-amber-50 text-amber-800 border-amber-200', sedang: 'bg-stone-50 text-stone-700 border-stone-200' };
+const levelTone: Record<string, string> = { habis: 'bg-red-50 text-red-800 border-red-200', sedikit: 'bg-amber-50 text-amber-800 border-amber-200', sedang: 'bg-white text-ink border-line' };
 
 export function RestockChips({ list }: { list: Restock[] }) {
   if (!list?.length) return <div className="text-sm text-muted">Tidak ada.</div>;
   return (
     <div className="flex flex-wrap gap-1.5">
       {list.map((r, i) => (
-        <span key={i} style={{ animationDelay: `${i * 40}ms` }} className={`anim-pop rounded-full border px-2 py-0.5 text-xs ${levelTone[r.level] || levelTone.sedang}`}>
+        <span key={i} style={{ animationDelay: `${i * 40}ms` }} className={`anim-pop rounded-full border px-2.5 py-0.5 text-xs font-bold ${levelTone[r.level] || levelTone.sedang}`}>
           {r.item} · {LEVELS.find((l) => l[0] === r.level)?.[1] || r.level}
         </span>
       ))}

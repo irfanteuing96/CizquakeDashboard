@@ -151,7 +151,7 @@ function ReportForm({ onSaved }: { onSaved: () => void }) {
             {CHANNELS.map(([k, label]) => (
               <Pair key={k} label={label} mini={sales[k].mini} medium={sales[k].medium} onChange={(a, b) => setSales({ ...sales, [k]: { mini: a, medium: b } })} />
             ))}
-            <div className="flex justify-between rounded-xl bg-brand-soft p-3 text-sm font-semibold">
+            <div className="flex justify-between rounded-2xl bg-ink p-3 font-display text-sm font-extrabold text-brand">
               <span>Total terjual</span>
               <span className="tabular-nums"><CountUp value={sold.mini} /> mini · <CountUp value={sold.medium} /> medium</span>
             </div>
@@ -169,7 +169,7 @@ function ReportForm({ onSaved }: { onSaved: () => void }) {
                 </div>
               </div>
             ))}
-            <div className="flex justify-between rounded-xl bg-brand-soft p-3 text-sm font-semibold">
+            <div className="flex justify-between gap-2 rounded-2xl bg-ink p-3 font-display text-xs font-extrabold text-brand">
               <span>Total</span>
               <span className="tabular-nums">QRIS {rupiah(totQris)} · Cash {rupiah(totCash)}</span>
             </div>
@@ -194,7 +194,7 @@ function ReportForm({ onSaved }: { onSaved: () => void }) {
 
           <Card className="space-y-3">
             <label className="flex min-h-11 items-center gap-3">
-              <input type="checkbox" className="h-5 w-5 accent-[#c98a00]" checked={kasOn} onChange={(e) => setKasOn(e.target.checked)} />
+              <input type="checkbox" className="h-5 w-5 accent-[#2b1613]" checked={kasOn} onChange={(e) => setKasOn(e.target.checked)} />
               <span className="font-medium">Laporkan uang cash &amp; saldo GoPay</span>
             </label>
             {kasOn && (
@@ -222,7 +222,7 @@ function ReportForm({ onSaved }: { onSaved: () => void }) {
 function WalletEditor({ title, value, onChange }: { title: string; value: Wallet; onChange: (w: Wallet) => void }) {
   const set = (i: number, patch: any) => onChange({ ...value, items: value.items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
   return (
-    <div className="space-y-2 rounded-xl border border-line p-3">
+    <div className="space-y-2 rounded-2xl border-2 border-line p-3">
       <div className="text-sm font-semibold">{title}</div>
       <label className="block"><span className="mb-0.5 block text-xs text-muted">Saldo awal (Rp)</span><Num money value={value.awal} onChange={(n) => onChange({ ...value, awal: n })} ariaLabel={`${title} saldo awal`} /></label>
       {value.items.map((it, i) => (

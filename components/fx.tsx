@@ -59,11 +59,11 @@ export function CountUp({ value, format }: { value: number; format?: (n: number)
 }
 
 /** Emoji yang bereaksi saat diketuk. */
-export function TapEmoji({ children, className = '', effect = 'anim-spin', idle = '', onTap }: { children: string; className?: string; effect?: string; idle?: string; onTap?: (e: React.MouseEvent) => void }) {
+export function TapEmoji({ children, className = '', effect = 'anim-spin', idle = '', onTap }: { children: React.ReactNode; className?: string; effect?: string; idle?: string; onTap?: (e: React.MouseEvent) => void }) {
   const [n, setN] = useState(0);
   return (
-    <button type="button" aria-hidden tabIndex={-1} className={`cursor-pointer select-none ${className}`} onClick={(e) => { setN(n + 1); onTap?.(e); }}>
-      <span key={n} className={n ? effect : idle}>{children}</span>
+    <button type="button" aria-label="Cizquake" tabIndex={-1} className={`cursor-pointer select-none ${className}`} onClick={(e) => { setN(n + 1); onTap?.(e); }}>
+      <span key={n} className={`inline-block ${n ? effect : idle}`}>{children}</span>
     </button>
   );
 }
