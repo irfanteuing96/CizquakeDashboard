@@ -19,8 +19,8 @@ export default function Home() {
       </Card>
 
       {pending.length > 0 && (
-        <Link href="/stok?tab=terima" className="block rounded-2xl border border-amber-300 bg-amber-50 p-4">
-          <div className="font-semibold">🚚 {pending.length} kiriman menunggu dikonfirmasi</div>
+        <Link href="/stok?tab=terima" className="press pulse-ring block rounded-2xl border border-amber-300 bg-amber-50 p-4">
+          <div className="font-semibold"><span className="anim-bouncy" aria-hidden>🚚</span> {pending.length} kiriman menunggu dikonfirmasi</div>
           <div className="text-sm text-muted">{pending.map((s: any) => `${s.mini} mini, ${s.medium} medium`).join(' · ')} — ketuk untuk terima</div>
         </Link>
       )}
@@ -32,7 +32,7 @@ export default function Home() {
         ) : (
           <p className="text-sm text-muted">Kamu belum check in.</p>
         )}
-        <Link href="/absen" className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-brand font-semibold">{open ? 'Check out' : 'Check in sekarang'}</Link>
+        <Link href="/absen" className={`press mt-3 flex min-h-12 items-center justify-center rounded-xl bg-brand font-semibold ${open ? '' : 'pulse-ring'}`}>{open ? 'Check out' : 'Check in sekarang'}</Link>
         {onDuty.length > 0 && (
           <ul className="mt-3 divide-y divide-line text-sm">
             {onDuty.map((a: any) => (
@@ -56,7 +56,7 @@ export default function Home() {
         ) : (
           <p className="text-sm text-muted">Belum ada laporan penjualan hari ini.</p>
         )}
-        <Link href="/laporan" className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-line bg-white font-semibold">Isi laporan harian</Link>
+        <Link href="/laporan" className="press mt-3 flex min-h-12 items-center justify-center rounded-xl border border-line bg-white font-semibold">Isi laporan harian</Link>
       </Card>
 
       <Card>

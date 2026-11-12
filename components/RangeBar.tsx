@@ -1,6 +1,7 @@
 'use client';
 import { addDays, todayWIB } from '@/lib/client';
 import { inputCls } from './ui';
+import { CountUp } from './fx';
 
 export type Range = { from: string; to: string; branch: string };
 export const defaultRange = (): Range => ({ from: addDays(todayWIB(), -6), to: todayWIB(), branch: '' });
@@ -20,7 +21,7 @@ export function RangeBar({ value, onChange, branches }: { value: Range; onChange
         {presets.map(([label, f, to]) => {
           const on = value.from === f && value.to === to;
           return (
-            <button key={label} onClick={() => onChange({ ...value, from: f, to })} className={`min-h-9 rounded-full border px-3 text-sm font-medium ${on ? 'border-brand bg-brand-soft' : 'border-line text-muted'}`}>{label}</button>
+            <button key={label} onClick={() => onChange({ ...value, from: f, to })} className={`press min-h-9 rounded-full border px-3 text-sm font-medium ${on ? 'anim-jelly border-brand bg-brand-soft' : 'border-line text-muted'}`}>{label}</button>
           );
         })}
       </div>
@@ -38,11 +39,11 @@ export function RangeBar({ value, onChange, branches }: { value: Range; onChange
   );
 }
 
-export function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+export function Stat({ label, value, sub, format }: { label: string; value: number; sub?: string; format?: (n: number) => string }) {
   return (
     <div className="rounded-2xl border border-line bg-white p-3">
       <div className="text-xs font-medium text-muted">{label}</div>
-      <div className="text-2xl font-bold tabular-nums">{value}</div>
+      <div className="text-2xl font-bold tabular-nums"><CountUp value={value} format={format} /></div>
       {sub ? <div className="text-xs text-muted">{sub}</div> : null}
     </div>
   );

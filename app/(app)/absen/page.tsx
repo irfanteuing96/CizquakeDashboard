@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { api, fmtDate, fmtDur, fmtTime, hoursBetween, usePoll } from '@/lib/client';
 import { Btn, Card, Field, H, inputCls, Loading, Msg, Tabs } from '@/components/ui';
+import { celebrate } from '@/components/fx';
 
 export default function Absen() {
   const home = usePoll<any>('home');
@@ -23,6 +24,7 @@ export default function Absen() {
       await api('attendance/' + kind, { shift: Number(shift), note });
       setOk(kind === 'in' ? 'Check in tercatat. Selamat bekerja!' : 'Check out tercatat. Terima kasih!');
       setNote('');
+      celebrate(kind === 'in' ? ['👋', '🧀', '✨', '💪'] : ['🎉', '🧀', '😴', '💛']);
       await Promise.all([home.reload(), mine.reload()]);
     } catch (e: any) {
       setErr(e.message);
@@ -36,7 +38,7 @@ export default function Absen() {
         <H>Absen</H>
         {open ? (
           <div className="space-y-3">
-            <div className="rounded-xl bg-brand-soft p-3">
+            <div className="anim-pop pulse-ring rounded-xl bg-brand-soft p-3">
               <div className="text-xs text-muted">Check in · {fmtDate(open.work_date, true)} · shift {open.shift} · {open.branch_name}</div>
               <div className="text-3xl font-bold tabular-nums">{fmtTime(open.check_in)}</div>
             </div>

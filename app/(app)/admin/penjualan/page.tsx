@@ -62,8 +62,8 @@ export default function AdminPenjualan() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Mini terjual" value={sum((r) => r.sold_mini)} />
             <Stat label="Medium terjual" value={sum((r) => r.sold_medium)} />
-            <Stat label="Upselling" value={rupiah(upsell)} sub={`${sum((r) => r.sales?.upselling?.mini || 0)} mini · ${sum((r) => r.sales?.upselling?.medium || 0)} medium`} />
-            <Stat label="Uang masuk langsung" value={rupiah(sum((r) => r.rev_qris + r.rev_cash))} sub={`QRIS ${rupiah(sum((r) => r.rev_qris))} · Cash ${rupiah(sum((r) => r.rev_cash))}`} />
+            <Stat label="Upselling" value={upsell} format={rupiah} sub={`${sum((r) => r.sales?.upselling?.mini || 0)} mini · ${sum((r) => r.sales?.upselling?.medium || 0)} medium`} />
+            <Stat label="Uang masuk langsung" value={sum((r) => r.rev_qris + r.rev_cash)} format={rupiah} sub={`QRIS ${rupiah(sum((r) => r.rev_qris))} · Cash ${rupiah(sum((r) => r.rev_cash))}`} />
           </div>
 
           <Card>
@@ -99,7 +99,7 @@ export default function AdminPenjualan() {
                     <span className="tabular-nums text-muted">{r.sold_mini} mini · {r.sold_medium} med {openId === r.id ? '▲' : '▼'}</span>
                   </button>
                   {openId === r.id && (
-                    <div className="pb-3">
+                    <div className="anim-up pb-3">
                       <ReportDetail r={r} />
                       <Btn variant="danger" small className="mt-2" onClick={async () => { if (confirm('Hapus laporan ini? Stok cabang tidak berubah.')) { await api('admin/reports/delete', { id: r.id }); reload(); } }}>Hapus laporan</Btn>
                     </div>

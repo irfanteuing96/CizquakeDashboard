@@ -1,6 +1,7 @@
 'use client';
 import { ReactNode, useState } from 'react';
 import { LEVELS, RESTOCK_ITEMS } from '@/lib/client';
+import { CountUp } from './fx';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-2xl border border-line bg-white p-4 shadow-sm ${className}`}>{children}</div>;
@@ -27,7 +28,7 @@ export function Btn({ variant = 'primary', small, busy, className = '', children
     <button
       {...p}
       disabled={disabled || busy}
-      className={`inline-flex items-center justify-center gap-1 rounded-xl font-semibold transition disabled:opacity-50 ${small ? 'min-h-9 px-3 text-sm' : 'min-h-12 px-4 text-base'} ${v} ${className}`}
+      className={`press inline-flex items-center justify-center gap-1 rounded-xl font-semibold disabled:opacity-50 ${small ? 'min-h-9 px-3 text-sm' : 'min-h-12 px-4 text-base'} ${v} ${className}`}
     >
       {busy ? 'Menyimpan…' : children}
     </button>
@@ -86,31 +87,36 @@ export function StockBig({ mini, medium }: { mini: number; medium: number }) {
     <div className="grid grid-cols-2 gap-3">
       <div className="rounded-xl bg-brand-soft p-3">
         <div className="text-xs font-medium text-muted">Mini box</div>
-        <div className={`text-4xl font-bold tabular-nums ${tone(mini, 15)}`}>{mini}</div>
+        <div className={`text-4xl font-bold tabular-nums ${tone(mini, 15)}`}><CountUp value={mini} /></div>
       </div>
       <div className="rounded-xl bg-brand-soft p-3">
         <div className="text-xs font-medium text-muted">Medium box</div>
-        <div className={`text-4xl font-bold tabular-nums ${tone(medium, 3)}`}>{medium}</div>
+        <div className={`text-4xl font-bold tabular-nums ${tone(medium, 3)}`}><CountUp value={medium} /></div>
       </div>
     </div>
   );
 }
 
 export function Msg({ error, ok }: { error?: string | null; ok?: string | null }) {
-  if (error) return <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>;
-  if (ok) return <div role="status" className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">{ok}</div>;
+  if (error) return <div role="alert" className="anim-wiggle rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>;
+  if (ok) return <div role="status" className="anim-pop rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">{ok}</div>;
   return null;
 }
 
 export function Loading() {
-  return <div className="py-10 text-center text-sm text-muted">Memuat…</div>;
+  return (
+    <div className="py-10 text-center text-sm text-muted">
+      <div className="anim-bouncy text-3xl" aria-hidden>🧀</div>
+      <div className="mt-1">Memuat…</div>
+    </div>
+  );
 }
 
 export function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange: (v: T) => void; items: [T, string][] }) {
   return (
     <div className="flex gap-1 rounded-xl bg-brand-soft p-1">
       {items.map(([k, label]) => (
-        <button key={k} onClick={() => onChange(k)} className={`min-h-10 flex-1 rounded-lg px-2 text-sm font-semibold ${value === k ? 'bg-white shadow-sm' : 'text-muted'}`}>
+        <button key={k} onClick={() => onChange(k)} className={`press min-h-10 flex-1 rounded-lg px-2 text-sm font-semibold ${value === k ? 'anim-jelly bg-white shadow-sm' : 'text-muted'}`}>
           {label}
         </button>
       ))}
@@ -126,7 +132,7 @@ export function RestockChips({ list }: { list: Restock[] }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {list.map((r, i) => (
-        <span key={i} className={`rounded-full border px-2 py-0.5 text-xs ${levelTone[r.level] || levelTone.sedang}`}>
+        <span key={i} style={{ animationDelay: `${i * 40}ms` }} className={`anim-pop rounded-full border px-2 py-0.5 text-xs ${levelTone[r.level] || levelTone.sedang}`}>
           {r.item} · {LEVELS.find((l) => l[0] === r.level)?.[1] || r.level}
         </span>
       ))}
@@ -141,7 +147,7 @@ export function RestockEditor({ value, onChange }: { value: Restock[]; onChange:
   return (
     <div className="space-y-2">
       {value.map((r, i) => (
-        <div key={i} className="flex items-center gap-2">
+        <div key={r.item} className="anim-up flex items-center gap-2">
           <div className="min-w-0 flex-1 truncate text-sm">{r.item}</div>
           <select aria-label={`Kondisi ${r.item}`} className={`${inputCls} !w-auto !min-h-9 !py-1 text-sm`} value={r.level} onChange={(e) => onChange(value.map((v, j) => (j === i ? { ...v, level: e.target.value } : v)))}>
             {LEVELS.map(([k, l]) => (
@@ -153,7 +159,7 @@ export function RestockEditor({ value, onChange }: { value: Restock[]; onChange:
       ))}
       <div className="flex flex-wrap gap-1.5">
         {RESTOCK_ITEMS.filter((it) => !has(it)).map((it) => (
-          <button type="button" key={it} onClick={() => add(it)} className="rounded-full border border-line bg-white px-2.5 py-1 text-xs text-muted">+ {it}</button>
+          <button type="button" key={it} onClick={() => add(it)} className="press rounded-full border border-line bg-white px-2.5 py-1 text-xs text-muted">+ {it}</button>
         ))}
       </div>
       <div className="flex gap-2">

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { api, fmtDateTime } from '@/lib/client';
 import { Btn, Field, inputCls, Msg, Pair } from './ui';
+import { celebrate } from './fx';
 
 /** Satu kiriman: info + konfirmasi penerimaan (jumlah bisa dikoreksi kalau tidak sesuai). */
 export function ShipmentCard({ s, canReceive, canCancel, onDone }: { s: any; canReceive: boolean; canCancel: boolean; onDone: () => void }) {
@@ -18,6 +19,7 @@ export function ShipmentCard({ s, canReceive, canCancel, onDone }: { s: any; can
     setErr(null);
     try {
       await api(path, body);
+      if (path.endsWith('receive')) celebrate(['🚚', '📦', '✅', '🧀']);
       onDone();
     } catch (e: any) {
       setErr(e.message);
@@ -26,7 +28,7 @@ export function ShipmentCard({ s, canReceive, canCancel, onDone }: { s: any; can
   }
 
   return (
-    <div className={`rounded-2xl border bg-white p-4 ${sent ? 'border-amber-300' : 'border-line'}`}>
+    <div className={`anim-up rounded-2xl border bg-white p-4 ${sent ? 'border-amber-300' : 'border-line'}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="font-semibold">{s.from_name || 'Produksi'} → {s.to_name}</div>
@@ -84,6 +86,7 @@ export function ShipmentForm({ branches, fromOptions, onDone }: { branches: any[
     try {
       await api('shipments', { fromBranchId: Number(from) || null, toBranchId: Number(to), mini, medium, items, note });
       setOk('Kiriman tercatat. Cabang tujuan tinggal konfirmasi saat barang sampai.');
+      celebrate(['🚚', '💨', '📦']);
       setMini(0); setMedium(0); setItems(''); setNote('');
       onDone();
     } catch (e: any) {

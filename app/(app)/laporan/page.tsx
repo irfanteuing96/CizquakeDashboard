@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { addDays, api, CHANNELS, fmtDate, MONEY, rupiah, todayWIB, usePoll } from '@/lib/client';
 import { Btn, Card, Field, H, inputCls, Loading, Msg, Num, Pair, Restock, RestockEditor, Tabs } from '@/components/ui';
 import { kasSummary, ReportDetail } from '@/components/ReportDetail';
+import { celebrate, CountUp } from '@/components/fx';
 
 type Qty = { mini: number; medium: number };
 type Wallet = { awal: number; items: { desc: string; amount: number; type: 'in' | 'out' }[] };
@@ -28,7 +29,7 @@ export default function Laporan() {
               </div>
               <span className="text-muted" aria-hidden>{openId === r.id ? '▲' : '▼'}</span>
             </button>
-            {openId === r.id && <div className="mt-3 border-t border-line pt-3"><ReportDetail r={r} /></div>}
+            {openId === r.id && <div className="anim-up mt-3 border-t border-line pt-3"><ReportDetail r={r} /></div>}
           </Card>
         ))
       )}
@@ -112,6 +113,7 @@ function ReportForm({ onSaved }: { onSaved: () => void }) {
         sales, money, sisaMini: sisaNow.mini, sisaMedium: sisaNow.medium, restock, kas: { enabled: kasOn, cash, gopay }, note,
       });
       setOk('Laporan tersimpan. Terima kasih!');
+      celebrate(['📝', '🧀', '🎉', '✨', '💰']);
       setEditing(true);
       setSisa(sisaNow);
       setSisaTouched(true);
@@ -151,7 +153,7 @@ function ReportForm({ onSaved }: { onSaved: () => void }) {
             ))}
             <div className="flex justify-between rounded-xl bg-brand-soft p-3 text-sm font-semibold">
               <span>Total terjual</span>
-              <span className="tabular-nums">{sold.mini} mini · {sold.medium} medium</span>
+              <span className="tabular-nums"><CountUp value={sold.mini} /> mini · <CountUp value={sold.medium} /> medium</span>
             </div>
           </Card>
 
@@ -224,7 +226,7 @@ function WalletEditor({ title, value, onChange }: { title: string; value: Wallet
       <div className="text-sm font-semibold">{title}</div>
       <label className="block"><span className="mb-0.5 block text-xs text-muted">Saldo awal (Rp)</span><Num money value={value.awal} onChange={(n) => onChange({ ...value, awal: n })} ariaLabel={`${title} saldo awal`} /></label>
       {value.items.map((it, i) => (
-        <div key={i} className="space-y-1 rounded-lg bg-stone-50 p-2">
+        <div key={i} className="anim-up space-y-1 rounded-lg bg-stone-50 p-2">
           <div className="flex gap-2">
             <select aria-label="Jenis" className={`${inputCls} !w-28`} value={it.type} onChange={(e) => set(i, { type: e.target.value })}>
               <option value="out">Keluar</option><option value="in">Masuk</option>

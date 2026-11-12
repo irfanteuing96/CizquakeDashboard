@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { Btn, Card, Field, inputCls, Loading, Msg } from '@/components/ui';
+import { celebrate, TapEmoji } from '@/components/fx';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,9 +30,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center p-5">
+    <div className="stagger mx-auto flex min-h-dvh max-w-md flex-col justify-center p-5">
       <div className="mb-6 text-center">
-        <div className="text-5xl" aria-hidden>🧀</div>
+        <TapEmoji className="text-6xl" idle="anim-float" effect="anim-spin" onTap={(e) => celebrate(['🧀', '🍰', '💛'], { x: e.clientX, y: e.clientY })}>🧀</TapEmoji>
         <h1 className="mt-2 text-2xl font-bold">Cizquake</h1>
         <p className="text-sm text-muted">Laporan &amp; rekap operasional cabang</p>
       </div>

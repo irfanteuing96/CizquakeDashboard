@@ -4,6 +4,7 @@ import { addDays, api, CHANNELS, fmtDate, fmtDateTime, fmtTime, rupiah, todayWIB
 import { Btn, Card, H, inputCls, Loading, Msg, RestockChips } from '@/components/ui';
 import { ReportDetail } from '@/components/ReportDetail';
 import { Stat } from '@/components/RangeBar';
+import { CountUp } from '@/components/fx';
 
 export default function AdminHome() {
   const [date, setDate] = useState(todayWIB());
@@ -29,8 +30,8 @@ export default function AdminHome() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Mini terjual" value={sum((r) => r.sold_mini)} />
             <Stat label="Medium terjual" value={sum((r) => r.sold_medium)} />
-            <Stat label="Upselling" value={rupiah(upsell)} sub={`${sum((r) => r.sales?.upselling?.mini || 0)} mini · ${sum((r) => r.sales?.upselling?.medium || 0)} medium`} />
-            <Stat label="Uang masuk langsung" value={rupiah(sum((r) => r.rev_qris + r.rev_cash))} sub={`QRIS ${rupiah(sum((r) => r.rev_qris))} · Cash ${rupiah(sum((r) => r.rev_cash))}`} />
+            <Stat label="Upselling" value={upsell} format={rupiah} sub={`${sum((r) => r.sales?.upselling?.mini || 0)} mini · ${sum((r) => r.sales?.upselling?.medium || 0)} medium`} />
+            <Stat label="Uang masuk langsung" value={sum((r) => r.rev_qris + r.rev_cash)} format={rupiah} sub={`QRIS ${rupiah(sum((r) => r.rev_qris))} · Cash ${rupiah(sum((r) => r.rev_cash))}`} />
           </div>
 
           <Card>
@@ -57,7 +58,7 @@ export default function AdminHome() {
           )}
 
           <h2 className="pt-1 text-sm font-semibold uppercase tracking-wide text-muted">Per cabang</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="stagger grid gap-4 sm:grid-cols-2">
             {data.branches.map((b: any) => {
               const att = data.attendance.filter((a: any) => a.branch_id === b.id);
               const reps = reports.filter((r) => r.branch_id === b.id);
@@ -68,8 +69,8 @@ export default function AdminHome() {
                     <div className="text-lg font-bold">{b.name}{b.is_pusat ? <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold">Pusat</span> : null}</div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-xl bg-brand-soft p-2"><div className="text-xs text-muted">Mini</div><div className={`text-3xl font-bold tabular-nums ${tone(b.mini, 15)}`}>{b.mini}</div></div>
-                    <div className="rounded-xl bg-brand-soft p-2"><div className="text-xs text-muted">Medium</div><div className={`text-3xl font-bold tabular-nums ${tone(b.medium, 3)}`}>{b.medium}</div></div>
+                    <div className="rounded-xl bg-brand-soft p-2"><div className="text-xs text-muted">Mini</div><div className={`text-3xl font-bold tabular-nums ${tone(b.mini, 15)}`}><CountUp value={b.mini} /></div></div>
+                    <div className="rounded-xl bg-brand-soft p-2"><div className="text-xs text-muted">Medium</div><div className={`text-3xl font-bold tabular-nums ${tone(b.medium, 3)}`}><CountUp value={b.medium} /></div></div>
                   </div>
                   <div className="-mt-1 text-xs text-muted">{b.stock_updated_at ? `Stok diperbarui ${fmtDateTime(b.stock_updated_at)} · ${b.stock_updated_by}` : 'Stok belum diisi'}</div>
 
@@ -79,7 +80,7 @@ export default function AdminHome() {
                       <ul className="text-sm">
                         {att.map((a: any) => (
                           <li key={a.id} className="flex justify-between py-0.5">
-                            <span>{!a.check_out ? '🟢 ' : ''}{a.user_name} <span className="text-muted">· shift {a.shift}</span></span>
+                            <span>{!a.check_out ? <span className="pulse-ring mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-green-500" aria-label="sedang jaga" /> : null}{a.user_name} <span className="text-muted">· shift {a.shift}</span></span>
                             <span className="tabular-nums">{fmtTime(a.check_in)} – {a.check_out ? fmtTime(a.check_out) : '…'}</span>
                           </li>
                         ))}
@@ -95,7 +96,7 @@ export default function AdminHome() {
                           <span>✅ Shift {r.shift} · {r.user_name}</span>
                           <span className="tabular-nums text-muted">{r.sold_mini} mini · {r.sold_medium} med {openRep === r.id ? '▲' : '▼'}</span>
                         </button>
-                        {openRep === r.id && <div className="pb-2"><ReportDetail r={r} /></div>}
+                        {openRep === r.id && <div className="anim-up pb-2"><ReportDetail r={r} /></div>}
                       </div>
                     ))}
                   </div>

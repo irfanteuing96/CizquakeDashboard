@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { Btn, Card, Loading, Msg } from './ui';
+import { celebrate, TapEmoji } from './fx';
 
 export type Me = {
   user: { id: number; name: string; username: string; role: 'admin' | 'staff' };
@@ -65,22 +66,22 @@ export default function Shell({ children }: { children: ReactNode }) {
       <div className={`mx-auto min-h-dvh pb-24 ${isAdmin ? 'max-w-3xl' : 'max-w-md'}`}>
         <header className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line bg-cream/95 px-4 py-3 backdrop-blur">
           <div className="min-w-0">
-            <div className="text-lg font-bold leading-tight">🧀 Cizquake</div>
+            <div className="text-lg font-bold leading-tight"><TapEmoji onTap={(e) => celebrate(['🧀'], { x: e.clientX, y: e.clientY })}>🧀</TapEmoji> Cizquake</div>
             <div className="truncate text-xs text-muted">{isAdmin ? 'Admin' : branch ? `Cabang ${branch.name}` : 'Pilih cabang'} · {me.user.name}</div>
           </div>
           {isAdmin ? (
             <Btn variant="ghost" small onClick={async () => { await api('logout', {}); router.replace('/login'); }}>Keluar</Btn>
           ) : null}
         </header>
-        <main className="space-y-4 p-4">{needPick ? <BranchPicker me={me} reloadMe={reloadMe} /> : children}</main>
+        <main key={path} className="stagger space-y-4 p-4">{needPick ? <BranchPicker me={me} reloadMe={reloadMe} /> : children}</main>
         {!needPick && (
           <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-white pb-[env(safe-area-inset-bottom)]">
             <div className={`mx-auto grid grid-cols-5 ${isAdmin ? 'max-w-3xl' : 'max-w-md'}`}>
               {nav.map(([href, label, icon]) => {
                 const active = href === '/' || href === '/admin' ? path === href : path.startsWith(href);
                 return (
-                  <Link key={href} href={href} aria-current={active ? 'page' : undefined} className={`flex min-h-14 flex-col items-center justify-center text-[11px] font-medium ${active ? 'text-ink' : 'text-muted'}`}>
-                    <span className={`flex h-7 w-12 items-center justify-center rounded-full text-lg ${active ? 'bg-brand-soft' : ''}`} aria-hidden>{icon}</span>
+                  <Link key={href} href={href} aria-current={active ? 'page' : undefined} className={`press flex min-h-14 flex-col items-center justify-center text-[11px] font-medium ${active ? 'text-ink' : 'text-muted'}`}>
+                    <span className={`flex h-7 w-12 items-center justify-center rounded-full text-lg transition-colors duration-300 ${active ? 'anim-jelly bg-brand-soft' : ''}`} aria-hidden>{icon}</span>
                     {label}
                   </Link>
                 );
