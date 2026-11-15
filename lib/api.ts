@@ -104,14 +104,20 @@ function cleanItems(v: any) {
     .filter((r) => r.name)
     .slice(0, 60);
 }
-/** Saldo cash cabang = cash dari laporan + tambahan − setoran − pemakaian. */
+/**
+ * Saldo cash cabang = cash dari laporan + tambahan − pemakaian − setoran yang sudah dikonfirmasi admin.
+ * Setoran yang masih menunggu konfirmasi belum mengurangi saldo.
+ */
 const SALDO = (b: string) => `(
   (SELECT COALESCE(sum(rev_cash),0) FROM reports WHERE branch_id = ${b}) +
-  (SELECT COALESCE(sum(CASE WHEN kind = 'tambah' THEN amount ELSE -amount END),0) FROM cash_entries WHERE branch_id = ${b})
+  (SELECT COALESCE(sum(CASE WHEN kind = 'tambah' THEN amount ELSE -amount END),0) FROM cash_entries WHERE branch_id = ${b} AND status = 'confirmed')
 )::int`;
+const PENDING = (b: string) => `(SELECT COALESCE(sum(amount),0) FROM cash_entries WHERE branch_id = ${b} AND status = 'pending')::int`;
 const CASH_SELECT = `
-  SELECT c.id, c.branch_id, c.kind, c.amount, c.note, c.created_at, u.name AS user_name, b.name AS branch_name
-  FROM cash_entries c LEFT JOIN users u ON u.id = c.user_id JOIN branches b ON b.id = c.branch_id`;
+  SELECT c.id, c.branch_id, c.user_id, c.kind, c.amount, c.note, c.created_at, c.status, c.confirmed_at,
+         u.name AS user_name, b.name AS branch_name, cu.name AS confirmed_name
+  FROM cash_entries c LEFT JOIN users u ON u.id = c.user_id JOIN branches b ON b.id = c.branch_id
+  LEFT JOIN users cu ON cu.id = c.confirmed_by`;
 
 /** Absen yang jadi dasar laporan: yang masih berjalan, atau yang terakhir (maks. 36 jam lalu). */
 async function reportContext(userId: number, bid: number) {
@@ -260,8 +266,8 @@ const routes: Record<string, Handler> = {
       q(`${REP_SELECT} WHERE r.branch_id = $1 AND r.work_date = $2::date ORDER BY r.shift`, [bid, today]),
       q(`SELECT id, name, is_pusat, mini, medium, restock FROM branches WHERE active AND id <> $1 AND NOT is_pusat ORDER BY name`, [bid]),
     ]);
-    const saldo = (await q1(`SELECT ${SALDO('$1')} AS saldo`, [bid]))!.saldo;
-    return { today, branch, open, onDuty, pending, reports, others, saldo };
+    const saldo = (await q1(`SELECT ${SALDO('$1')} AS saldo, ${PENDING('$1')} AS pending`, [bid]))!;
+    return { today, branch, open, onDuty, pending, reports, others, saldo: saldo.saldo, setorPending: saldo.pending };
   },
 
   'POST attendance/in': async (c) => {
@@ -501,7 +507,7 @@ const routes: Record<string, Handler> = {
   'GET cash': async (c) => {
     const bid = needBranch(c);
     const [saldo, entries, incomes] = await Promise.all([
-      q1(`SELECT ${SALDO('$1')} AS saldo`, [bid]),
+      q1(`SELECT ${SALDO('$1')} AS saldo, ${PENDING('$1')} AS pending`, [bid]),
       q(`${CASH_SELECT} WHERE c.branch_id = $1 ORDER BY c.created_at DESC LIMIT 60`, [bid]),
       q(
         `SELECT r.id, r.work_date::text AS work_date, r.shift, r.rev_cash AS amount, r.updated_at AS created_at, u.name AS user_name
@@ -509,7 +515,7 @@ const routes: Record<string, Handler> = {
         [bid]
       ),
     ]);
-    return { saldo: saldo!.saldo, entries, incomes };
+    return { saldo: saldo!.saldo, pending: saldo!.pending, entries, incomes };
   },
 
   'POST cash': async (c) => {
@@ -521,10 +527,28 @@ const routes: Record<string, Handler> = {
     if (!amount) throw new HttpError(400, 'Isi jumlah uangnya.');
     if (kind !== 'setor' && !note) throw new HttpError(400, 'Isi keterangannya.');
     if (kind !== 'tambah') {
-      const s = await q1(`SELECT ${SALDO('$1')} AS saldo`, [bid]);
-      if (amount > s!.saldo) throw new HttpError(400, `Saldo cash hanya Rp${s!.saldo.toLocaleString('id-ID')}. Kalau ada uang lain di laci, catat dulu sebagai "Tambah saldo".`);
+      // Uang yang sedang disetor (menunggu konfirmasi) tidak bisa disetor atau dipakai lagi.
+      const s = await q1(`SELECT ${SALDO('$1')} - ${PENDING('$1')} AS avail`, [bid]);
+      if (amount > s!.avail) throw new HttpError(400, `Cash yang tersedia hanya Rp${Math.max(s!.avail, 0).toLocaleString('id-ID')}. Kalau ada uang lain di laci, catat dulu sebagai "Tambah saldo".`);
     }
-    await q(`INSERT INTO cash_entries (branch_id, user_id, kind, amount, note) VALUES ($1,$2,$3,$4,$5)`, [bid, c.user!.id, kind, amount, note]);
+    // Setoran baru mengurangi saldo setelah admin mengonfirmasi uangnya diterima.
+    await q(`INSERT INTO cash_entries (branch_id, user_id, kind, amount, note, status) VALUES ($1,$2,$3,$4,$5,$6)`, [
+      bid, c.user!.id, kind, amount, note, kind === 'setor' ? 'pending' : 'confirmed',
+    ]);
+    return { ok: true };
+  },
+
+  'POST cash/cancel': async (c) => {
+    const bid = needBranch(c);
+    const r = await q(`DELETE FROM cash_entries WHERE id = $1 AND branch_id = $2 AND user_id = $3 AND status = 'pending' RETURNING id`, [int(c.body.id), bid, c.user!.id]);
+    if (!r.length) throw new HttpError(400, 'Setoran ini sudah dikonfirmasi atau bukan milikmu.');
+    return { ok: true };
+  },
+
+  'POST admin/cash/confirm': async (c) => {
+    const u = needAdmin(c);
+    const r = await q(`UPDATE cash_entries SET status = 'confirmed', confirmed_by = $2, confirmed_at = now() WHERE id = $1 AND status = 'pending' RETURNING id`, [int(c.body.id), u.id]);
+    if (!r.length) throw new HttpError(400, 'Setoran tidak ditemukan atau sudah dikonfirmasi.');
     return { ok: true };
   },
 
@@ -533,8 +557,8 @@ const routes: Record<string, Handler> = {
     const { from, to, branch } = range(c);
     return {
       rows: await q(
-        `${CASH_SELECT} WHERE (c.created_at ${TZ})::date BETWEEN $1::date AND $2::date AND ($3::int IS NULL OR c.branch_id = $3)
-         ORDER BY c.created_at DESC LIMIT 1000`,
+        `${CASH_SELECT} WHERE (c.status = 'pending' OR (c.created_at ${TZ})::date BETWEEN $1::date AND $2::date) AND ($3::int IS NULL OR c.branch_id = $3)
+         ORDER BY (c.status = 'pending') DESC, c.created_at DESC LIMIT 1000`,
         [from, to, branch]
       ),
     };
@@ -550,13 +574,14 @@ const routes: Record<string, Handler> = {
   'GET admin/dashboard': async (c) => {
     needAdmin(c);
     const date = isDate(c.query.get('date')) ? c.query.get('date')! : todayWIB();
+    const setoran = await q(`${CASH_SELECT} WHERE c.status = 'pending' ORDER BY c.created_at`);
     const [branches, attendance, reports, shipments] = await Promise.all([
       q(`SELECT ${BRANCH_COLS}, ${SALDO('branches.id')} AS saldo FROM branches WHERE active ORDER BY is_pusat DESC, name`),
       q(`${ATT_SELECT} WHERE a.work_date = $1::date OR (a.check_out IS NULL AND $1::date = $2::date) ORDER BY a.check_in`, [date, todayWIB()]),
       q(`${REP_SELECT} WHERE r.work_date = $1::date ORDER BY r.shift`, [date]),
       q(`${SHIP_SELECT} WHERE s.status = 'sent' ORDER BY s.created_at`),
     ]);
-    return { date, today: todayWIB(), branches, attendance, reports, shipments };
+    return { date, today: todayWIB(), branches, attendance, reports, shipments, setoran };
   },
 
   'GET admin/attendance': async (c) => {

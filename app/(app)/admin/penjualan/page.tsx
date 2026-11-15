@@ -65,11 +65,12 @@ export default function AdminPenjualan() {
             {cash.data.rows.map((e: any) => (
               <li key={e.id} className="flex items-center justify-between gap-2 py-2">
                 <div className="min-w-0">
-                  <div className="font-bold">{e.branch_name} · {CASH_KINDS[e.kind]}</div>
-                  <div className="truncate text-xs text-muted">{e.note ? e.note + ' · ' : ''}{e.user_name || '—'} · {fmtDateTime(e.created_at)}</div>
+                  <div className="font-bold">{e.branch_name} · {CASH_KINDS[e.kind]}{e.status === 'pending' ? <span className="ml-1.5 rounded-full bg-ink px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-brand">menunggu</span> : null}</div>
+                  <div className="truncate text-xs text-muted">{e.note ? e.note + ' · ' : ''}{e.user_name || '—'} · {fmtDateTime(e.created_at)}{e.kind === 'setor' && e.confirmed_name ? ` · diterima ${e.confirmed_name}` : ''}</div>
+                  {e.status === 'pending' ? <button className="mt-1 text-xs font-extrabold underline decoration-brand decoration-2 underline-offset-2" onClick={async () => { await api('admin/cash/confirm', { id: e.id }); cash.reload(); }}>Konfirmasi uang diterima</button> : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className={`font-display font-extrabold tabular-nums ${e.kind === 'tambah' ? 'text-green-700' : 'text-red-700'}`}>{e.kind === 'tambah' ? '+' : '−'}{rupiah(e.amount)}</span>
+                  <span className={`font-display font-extrabold tabular-nums ${e.status === 'pending' ? 'text-muted' : e.kind === 'tambah' ? 'text-green-700' : 'text-red-700'}`}>{e.kind === 'tambah' ? '+' : '−'}{rupiah(e.amount)}</span>
                   <button aria-label="Hapus catatan cash" className="press h-8 w-8 rounded-full border-2 border-line text-muted" onClick={async () => { if (confirm('Hapus catatan ini? Saldo cash cabang akan dihitung ulang.')) { await api('admin/cash/delete', { id: e.id }); cash.reload(); } }}>✕</button>
                 </div>
               </li>

@@ -65,6 +65,7 @@ export default function Home() {
           <div>
             <div className="text-[11px] font-extrabold uppercase tracking-widest text-muted">Saldo cash di cabang</div>
             <div className="num text-3xl tabular-nums"><CountUp value={data.saldo} format={rupiah} /></div>
+            {data.setorPending > 0 ? <div className="text-xs font-bold text-muted">⏳ {rupiah(data.setorPending)} menunggu konfirmasi</div> : null}
           </div>
           <span className="rounded-full bg-ink px-3 py-1.5 font-display text-xs font-extrabold text-brand">Setor / pakai</span>
         </div>

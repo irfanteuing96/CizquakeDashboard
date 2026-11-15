@@ -4,7 +4,7 @@ import { addDays, api, CHANNELS, fmtDate, fmtDateTime, fmtTime, rupiah, todayWIB
 import { Btn, Card, H, inputCls, Loading, Msg, RestockChips } from '@/components/ui';
 import { ReportDetail } from '@/components/ReportDetail';
 import { Stat } from '@/components/RangeBar';
-import { CountUp } from '@/components/fx';
+import { celebrate, CountUp } from '@/components/fx';
 
 export default function AdminHome() {
   const [date, setDate] = useState(todayWIB());
@@ -27,6 +27,29 @@ export default function AdminHome() {
       <Msg error={error} />
       {!data ? <Loading /> : (
         <>
+          {data.setoran.length > 0 && (
+            <Card className="!bg-brand">
+              <H>💰 Setoran menunggu konfirmasi ({data.setoran.length})</H>
+              <ul className="space-y-2">
+                {data.setoran.map((e: any) => (
+                  <li key={e.id} className="anim-up rounded-2xl border-2 border-ink bg-white p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-display font-extrabold">{e.branch_name}</div>
+                        <div className="truncate text-xs text-muted">{e.user_name || '—'} · {fmtDateTime(e.created_at)}{e.note ? ` · ${e.note}` : ''}</div>
+                      </div>
+                      <div className="num shrink-0 text-xl tabular-nums">{rupiah(e.amount)}</div>
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <Btn small className="flex-1" onClick={async () => { try { await api('admin/cash/confirm', { id: e.id }); celebrate(['💰', '✅', '🧀']); } catch (err: any) { alert(err.message); } reload(); }}>Uang sudah diterima ✅</Btn>
+                      <Btn small variant="danger" onClick={async () => { if (confirm(`Tolak setoran ${rupiah(e.amount)} dari ${e.branch_name}? Saldo cabang tidak berubah.`)) { await api('admin/cash/delete', { id: e.id }); reload(); } }}>Tolak</Btn>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Mini terjual" value={sum((r) => r.sold_mini)} />
             <Stat label="Medium terjual" value={sum((r) => r.sold_medium)} />
