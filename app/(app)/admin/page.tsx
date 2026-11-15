@@ -51,7 +51,7 @@ export default function AdminHome() {
               <H>🚚 Kiriman belum dikonfirmasi ({data.shipments.length})</H>
               <ul className="space-y-1 text-sm">
                 {data.shipments.map((s: any) => (
-                  <li key={s.id}>{s.from_name || 'Produksi'} → <b>{s.to_name}</b>: {s.mini} mini, {s.medium} medium <span className="text-muted">· {fmtDateTime(s.created_at)}</span></li>
+                  <li key={s.id}>{s.from_name || 'Produksi'} → <b>{s.to_name}</b>: {s.mini} mini, {s.medium} medium{s.item_list?.length ? `, ${s.item_list.length} barang lain` : ''} <span className="text-muted">· {fmtDateTime(s.created_at)}</span></li>
                 ))}
               </ul>
             </Card>
@@ -73,6 +73,10 @@ export default function AdminHome() {
                     <div className="rounded-2xl border-2 border-ink bg-brand p-2.5"><div className="text-[10px] font-extrabold uppercase tracking-widest text-ink/75">Medium</div><div className={`num text-4xl tabular-nums ${tone(b.medium, 3)}`}><CountUp value={b.medium} /></div></div>
                   </div>
                   <div className="-mt-1 text-xs text-muted">{b.stock_updated_at ? `Stok diperbarui ${fmtDateTime(b.stock_updated_at)} · ${b.stock_updated_by}` : 'Stok belum diisi'}</div>
+                  <div className="flex items-center justify-between rounded-2xl bg-cream px-3 py-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted">Saldo cash</span>
+                    <span className="num tabular-nums">{rupiah(b.saldo)}</span>
+                  </div>
 
                   <div>
                     <div className="mb-1 text-[10px] font-extrabold uppercase tracking-widest text-muted">ABSEN</div>
@@ -81,7 +85,7 @@ export default function AdminHome() {
                         {att.map((a: any) => (
                           <li key={a.id} className="flex justify-between py-0.5">
                             <span>{!a.check_out ? <span className="pulse-ring mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-green-500" aria-label="sedang jaga" /> : null}{a.user_name} <span className="text-muted">· shift {a.shift}</span></span>
-                            <span className="tabular-nums">{fmtTime(a.check_in)} – {a.check_out ? fmtTime(a.check_out) : '…'}</span>
+                            <span className="tabular-nums">{fmtTime(a.check_in)} – {a.check_out ? fmtTime(a.check_out) : '…'}{a.edited ? <span className="text-muted" title="Jam diedit"> ✏️</span> : null}</span>
                           </li>
                         ))}
                       </ul>

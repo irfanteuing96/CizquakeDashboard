@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { api, CHANNELS, downloadCsv, fmtDate, MONEY, rupiah, usePoll } from '@/lib/client';
+import { api, CASH_KINDS, CHANNELS, downloadCsv, fmtDate, fmtDateTime, MONEY, rupiah, usePoll } from '@/lib/client';
 import { Btn, Card, H, Loading, Msg } from '@/components/ui';
 import { ReportDetail } from '@/components/ReportDetail';
 import { defaultRange, rangeQuery, RangeBar, Stat } from '@/components/RangeBar';
@@ -21,6 +21,7 @@ export default function AdminPenjualan() {
   const [range, setRange] = useState(defaultRange);
   const branches = usePoll<any>('admin/branches', 120000);
   const { data, error, reload } = usePoll<any>(`admin/reports?${rangeQuery(range)}`, 20000);
+  const cash = usePoll<any>(`admin/cash?${rangeQuery(range)}`, 20000);
   const [openId, setOpenId] = useState<number | null>(null);
   const rows: any[] = data?.rows || [];
   const sum = (f: (r: any) => number) => rows.reduce((s, r) => s + f(r), 0);
@@ -57,6 +58,25 @@ export default function AdminPenjualan() {
     <>
       <RangeBar value={range} onChange={setRange} branches={(branches.data?.rows || []).filter((b: any) => b.active)} />
       <Msg error={error} />
+      <Card>
+        <H>Setoran &amp; pemakaian cash</H>
+        {!cash.data ? <Loading /> : cash.data.rows.length === 0 ? <p className="text-sm text-muted">Tidak ada setoran atau pemakaian cash di rentang ini.</p> : (
+          <ul className="divide-y divide-line text-sm">
+            {cash.data.rows.map((e: any) => (
+              <li key={e.id} className="flex items-center justify-between gap-2 py-2">
+                <div className="min-w-0">
+                  <div className="font-bold">{e.branch_name} · {CASH_KINDS[e.kind]}</div>
+                  <div className="truncate text-xs text-muted">{e.note ? e.note + ' · ' : ''}{e.user_name || '—'} · {fmtDateTime(e.created_at)}</div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className={`font-display font-extrabold tabular-nums ${e.kind === 'tambah' ? 'text-green-700' : 'text-red-700'}`}>{e.kind === 'tambah' ? '+' : '−'}{rupiah(e.amount)}</span>
+                  <button aria-label="Hapus catatan cash" className="press h-8 w-8 rounded-full border-2 border-line text-muted" onClick={async () => { if (confirm('Hapus catatan ini? Saldo cash cabang akan dihitung ulang.')) { await api('admin/cash/delete', { id: e.id }); cash.reload(); } }}>✕</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
       {!data ? <Loading /> : rows.length === 0 ? <Card><p className="text-sm text-muted">Belum ada laporan di rentang ini.</p></Card> : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

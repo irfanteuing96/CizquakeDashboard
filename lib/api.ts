@@ -92,10 +92,58 @@ function needBranch(c: Ctx) {
 function cleanRestock(v: any) {
   if (!Array.isArray(v)) return [];
   return v
-    .map((r) => ({ item: str(r?.item, 60), level: LEVELS.includes(r?.level) ? r.level : 'habis' }))
+    .filter((r) => LEVELS.includes(r?.level)) // status "aman" tidak disimpan
+    .map((r) => ({ item: str(r.item, 60), level: r.level as string }))
     .filter((r) => r.item)
     .slice(0, 40);
 }
+function cleanItems(v: any) {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((r) => ({ name: str(r?.name, 60), note: str(r?.note, 80), ok: null as boolean | null }))
+    .filter((r) => r.name)
+    .slice(0, 60);
+}
+/** Saldo cash cabang = cash dari laporan + tambahan − setoran − pemakaian. */
+const SALDO = (b: string) => `(
+  (SELECT COALESCE(sum(rev_cash),0) FROM reports WHERE branch_id = ${b}) +
+  (SELECT COALESCE(sum(CASE WHEN kind = 'tambah' THEN amount ELSE -amount END),0) FROM cash_entries WHERE branch_id = ${b})
+)::int`;
+const CASH_SELECT = `
+  SELECT c.id, c.branch_id, c.kind, c.amount, c.note, c.created_at, u.name AS user_name, b.name AS branch_name
+  FROM cash_entries c LEFT JOIN users u ON u.id = c.user_id JOIN branches b ON b.id = c.branch_id`;
+
+/** Absen yang jadi dasar laporan: yang masih berjalan, atau yang terakhir (maks. 36 jam lalu). */
+async function reportContext(userId: number, bid: number) {
+  const att = await q1(
+    `${ATT_SELECT} WHERE a.user_id = $1 AND a.branch_id = $2 AND a.check_in > now() - interval '36 hours'
+     ORDER BY (a.check_out IS NULL) DESC, a.check_in DESC LIMIT 1`,
+    [userId, bid]
+  );
+  if (!att) return null;
+  const [existing, prev, masuk, branch] = await Promise.all([
+    q1(`${REP_SELECT} WHERE r.branch_id = $1 AND r.work_date = $2::date AND r.shift = $3::int`, [bid, att.work_date, att.shift]),
+    q1(
+      `SELECT sisa_mini, sisa_medium FROM reports WHERE branch_id = $1 AND (work_date, shift) < ($2::date, $3::int)
+       ORDER BY work_date DESC, shift DESC LIMIT 1`,
+      [bid, att.work_date, att.shift]
+    ),
+    q1(
+      `SELECT COALESCE(sum(received_mini),0)::int AS mini, COALESCE(sum(received_medium),0)::int AS medium FROM shipments
+       WHERE to_branch_id = $1 AND status = 'received' AND received_by = $2 AND received_at >= $3 AND received_at <= COALESCE($4::timestamptz, now())`,
+      [bid, userId, att.check_in, att.check_out]
+    ),
+    q1(`SELECT mini, medium FROM branches WHERE id = $1`, [bid]),
+  ]);
+  // Stok awal: sisa laporan sebelumnya. Kalau belum ada laporan, stok terkini dikurangi yang baru diterima.
+  const awal = existing
+    ? { mini: existing.awal_mini, medium: existing.awal_medium }
+    : prev
+      ? { mini: prev.sisa_mini, medium: prev.sisa_medium }
+      : { mini: Math.max(branch!.mini - masuk!.mini, 0), medium: Math.max(branch!.medium - masuk!.medium, 0) };
+  return { att, existing: existing || null, awal, masuk: masuk as { mini: number; medium: number } };
+}
+
 function cleanQty(v: any) {
   const out: Record<string, { mini: number; medium: number }> = {};
   for (const k of CHANNELS) out[k] = { mini: int(v?.[k]?.mini), medium: int(v?.[k]?.medium) };
@@ -106,20 +154,9 @@ function cleanMoney(v: any) {
   for (const k of MONEY_KEYS) out[k] = { qris: int(v?.[k]?.qris), cash: int(v?.[k]?.cash) };
   return out;
 }
-function cleanKas(v: any) {
-  const wallet = (w: any) => ({
-    awal: int(w?.awal),
-    items: (Array.isArray(w?.items) ? w.items : [])
-      .map((i: any) => ({ desc: str(i?.desc, 100), amount: int(i?.amount), type: i?.type === 'in' ? 'in' : 'out' }))
-      .filter((i: any) => i.desc && i.amount)
-      .slice(0, 30),
-  });
-  return { enabled: !!v?.enabled, cash: wallet(v?.cash), gopay: wallet(v?.gopay) };
-}
-
 const SHIP_SELECT = `
   SELECT s.id, s.from_branch_id, s.to_branch_id, s.mini, s.medium, s.items, s.note, s.status, s.created_at,
-         s.received_mini, s.received_medium, s.received_at, s.receive_note, s.created_by,
+         s.received_mini, s.received_medium, s.received_at, s.receive_note, s.created_by, s.item_list,
          fb.name AS from_name, tb.name AS to_name, cu.name AS created_name, ru.name AS received_name
   FROM shipments s
   LEFT JOIN branches fb ON fb.id = s.from_branch_id
@@ -127,7 +164,7 @@ const SHIP_SELECT = `
   LEFT JOIN users cu ON cu.id = s.created_by
   LEFT JOIN users ru ON ru.id = s.received_by`;
 const ATT_SELECT = `
-  SELECT a.id, a.user_id, a.branch_id, a.work_date::text AS work_date, a.shift, a.check_in, a.check_out, a.note,
+  SELECT a.id, a.user_id, a.branch_id, a.work_date::text AS work_date, a.shift, a.check_in, a.check_out, a.note, a.edited,
          u.name AS user_name, b.name AS branch_name
   FROM attendance a JOIN users u ON u.id = a.user_id JOIN branches b ON b.id = a.branch_id`;
 const REP_SELECT = `
@@ -221,9 +258,10 @@ const routes: Record<string, Handler> = {
       q(`${ATT_SELECT} WHERE a.branch_id = $1 AND (a.work_date = $2::date OR a.check_out IS NULL) ORDER BY a.check_in DESC LIMIT 20`, [bid, today]),
       q(`${SHIP_SELECT} WHERE s.to_branch_id = $1 AND s.status = 'sent' ORDER BY s.created_at`, [bid]),
       q(`${REP_SELECT} WHERE r.branch_id = $1 AND r.work_date = $2::date ORDER BY r.shift`, [bid, today]),
-      q(`SELECT id, name, is_pusat FROM branches WHERE active AND id <> $1 ORDER BY is_pusat DESC, name`, [bid]),
+      q(`SELECT id, name, is_pusat, mini, medium, restock FROM branches WHERE active AND id <> $1 AND NOT is_pusat ORDER BY name`, [bid]),
     ]);
-    return { today, branch, open, onDuty, pending, reports, others };
+    const saldo = (await q1(`SELECT ${SALDO('$1')} AS saldo`, [bid]))!.saldo;
+    return { today, branch, open, onDuty, pending, reports, others, saldo };
   },
 
   'POST attendance/in': async (c) => {
@@ -245,6 +283,31 @@ const routes: Record<string, Handler> = {
     needUser(c);
     const r = await q(`UPDATE attendance SET check_out = now() WHERE user_id = $1 AND check_out IS NULL RETURNING id`, [c.user!.id]);
     if (!r.length) throw new HttpError(400, 'Kamu belum check in.');
+    return { ok: true };
+  },
+
+  'POST attendance/edit': async (c) => {
+    const u = needUser(c);
+    const ci = new Date(c.body.checkIn);
+    const co = c.body.checkOut ? new Date(c.body.checkOut) : null;
+    const soon = Date.now() + 5 * 60_000;
+    if (isNaN(+ci) || (co && isNaN(+co))) throw new HttpError(400, 'Jam tidak valid.');
+    if (+ci > soon || (co && +co > soon)) throw new HttpError(400, 'Jam tidak boleh di masa depan.');
+    if (co && co <= ci) throw new HttpError(400, 'Jam keluar harus setelah jam masuk.');
+    if (co && +co - +ci > 24 * 3600_000) throw new HttpError(400, 'Satu shift maksimal 24 jam.');
+    const shift = Math.min(Math.max(int(c.body.shift), 1), 3);
+    const r = await q(
+      `UPDATE attendance SET check_in = $3, check_out = $4, shift = $5, work_date = ($3::timestamptz ${TZ})::date, edited = TRUE
+       WHERE id = $1 AND user_id = $2 AND check_in > now() - interval '3 days' AND $3::timestamptz > now() - interval '3 days' RETURNING id`,
+      [int(c.body.id), u.id, ci.toISOString(), co ? co.toISOString() : null, shift]
+    );
+    if (!r.length) throw new HttpError(400, 'Absen ini tidak bisa diedit (hanya 3 hari terakhir). Hubungi admin.');
+    return { ok: true };
+  },
+
+  'POST opname': async (c) => {
+    const bid = needBranch(c);
+    await q(`UPDATE branches SET restock = $2::jsonb, restock_updated_at = now() WHERE id = $1`, [bid, JSON.stringify(cleanRestock(c.body.restock))]);
     return { ok: true };
   },
 
@@ -301,19 +364,22 @@ const routes: Record<string, Handler> = {
   'POST shipments': async (c) => {
     const u = needUser(c);
     const from = u.role === 'admin' ? int(c.body.fromBranchId) || null : needBranch(c);
+    if (u.role !== 'admin' && !(await q1(`SELECT id FROM branches WHERE id = $1 AND is_pusat`, [from]))) {
+      throw new HttpError(403, 'Hanya cabang pusat yang bisa mengirim barang.');
+    }
     const to = int(c.body.toBranchId);
     const mini = int(c.body.mini);
     const medium = int(c.body.medium);
-    const items = str(c.body.items, 500);
+    const itemList = cleanItems(c.body.itemList);
     if (!to || to === from) throw new HttpError(400, 'Pilih cabang tujuan.');
-    if (!mini && !medium && !items) throw new HttpError(400, 'Isi jumlah atau barang yang dikirim.');
-    if (!(await q1(`SELECT id FROM branches WHERE id = $1 AND active`, [to]))) throw new HttpError(400, 'Cabang tujuan tidak ditemukan.');
-    await q(`INSERT INTO shipments (from_branch_id, to_branch_id, mini, medium, items, note, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7)`, [
+    if (!mini && !medium && !itemList.length) throw new HttpError(400, 'Isi jumlah atau barang yang dikirim.');
+    if (!(await q1(`SELECT id FROM branches WHERE id = $1 AND active AND NOT is_pusat`, [to]))) throw new HttpError(400, 'Cabang tujuan tidak ditemukan.');
+    await q(`INSERT INTO shipments (from_branch_id, to_branch_id, mini, medium, item_list, note, created_by) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7)`, [
       from,
       to,
       mini,
       medium,
-      items,
+      JSON.stringify(itemList),
       str(c.body.note, 300),
       u.id,
     ]);
@@ -337,10 +403,20 @@ const routes: Record<string, Handler> = {
     if (u.role !== 'admin') params.push(needBranch(c));
     const s = await q1(
       `UPDATE shipments SET status = 'received', received_mini = $2, received_medium = $3, received_by = $4, received_at = now(), receive_note = $5
-       WHERE id = $1 AND status = 'sent' ${cond} RETURNING to_branch_id`,
+       WHERE id = $1 AND status = 'sent' ${cond} RETURNING to_branch_id, item_list`,
       params
     );
     if (!s) throw new HttpError(400, 'Kiriman tidak ditemukan atau sudah diterima.');
+    // Simpan hasil cek tiap barang; barang yang sudah diterima tidak lagi berstatus "perlu restock".
+    const checks: any[] = Array.isArray(c.body.checks) ? c.body.checks : [];
+    const list = (s.item_list as any[]).map((it, i) => ({ ...it, ok: checks[i] === true }));
+    await q(`UPDATE shipments SET item_list = $2::jsonb WHERE id = $1`, [id, JSON.stringify(list)]);
+    const got = new Set(list.filter((it) => it.ok).map((it) => String(it.name).toLowerCase()));
+    if (got.size) {
+      const b = await q1(`SELECT restock FROM branches WHERE id = $1`, [s.to_branch_id]);
+      const rest = (b!.restock as any[]).filter((r) => !got.has(String(r.item).toLowerCase()));
+      await q(`UPDATE branches SET restock = $2::jsonb, restock_updated_at = now() WHERE id = $1`, [s.to_branch_id, JSON.stringify(rest)]);
+    }
     await q(`UPDATE branches SET mini = mini + $2, medium = medium + $3, stock_updated_at = now(), stock_updated_by = $4 WHERE id = $1`, [
       s.to_branch_id,
       mini,
@@ -377,45 +453,22 @@ const routes: Record<string, Handler> = {
     return { rows: await q(`${REP_SELECT} WHERE r.branch_id = $1 ORDER BY r.work_date DESC, r.shift DESC LIMIT 30`, [bid]) };
   },
 
-  'GET reports/prefill': async (c) => {
+  'GET reports/current': async (c) => {
     const bid = needBranch(c);
-    const date = isDate(c.query.get('date')) ? c.query.get('date')! : todayWIB();
-    const shift = Math.min(Math.max(int(c.query.get('shift')), 1), 3);
-    const existing = await q1(`${REP_SELECT} WHERE r.branch_id = $1 AND r.work_date = $2::date AND r.shift = $3`, [bid, date, shift]);
-    const [prev, masuk, branch] = await Promise.all([
-      q1(
-        `SELECT sisa_mini, sisa_medium FROM reports WHERE branch_id = $1 AND (work_date, shift) < ($2::date, $3::int)
-         ORDER BY work_date DESC, shift DESC LIMIT 1`,
-        [bid, date, shift]
-      ),
-      q1(
-        `SELECT COALESCE(sum(received_mini),0)::int AS mini, COALESCE(sum(received_medium),0)::int AS medium FROM shipments
-         WHERE to_branch_id = $1 AND status = 'received' AND (received_at ${TZ})::date = $2::date`,
-        [bid, date]
-      ),
-      q1(`SELECT mini, medium, restock FROM branches WHERE id = $1`, [bid]),
-    ]);
-    // Kiriman yang sudah dihitung di laporan shift lain pada hari yang sama tidak dihitung dua kali.
-    const counted = await q1(
-      `SELECT COALESCE(sum(masuk_mini),0)::int AS mini, COALESCE(sum(masuk_medium),0)::int AS medium FROM reports
-       WHERE branch_id = $1 AND work_date = $2::date AND shift <> $3::int`,
-      [bid, date, shift]
-    );
-    masuk!.mini = Math.max(masuk!.mini - counted!.mini, 0);
-    masuk!.medium = Math.max(masuk!.medium - counted!.medium, 0);
-    return { date, shift, existing: existing || null, prev: prev || null, masuk, branch };
+    return { ctx: await reportContext(c.user!.id, bid) };
   },
 
   'POST reports': async (c) => {
     const bid = needBranch(c);
     const u = c.user!;
-    const date = c.body.date;
-    if (!isDate(date)) throw new HttpError(400, 'Tanggal tidak valid.');
-    if (date > todayWIB()) throw new HttpError(400, 'Tanggal laporan tidak boleh di masa depan.');
-    const shift = Math.min(Math.max(int(c.body.shift), 1), 3);
+    const ctx = await reportContext(u.id, bid);
+    if (!ctx) throw new HttpError(400, 'Check in dulu sebelum mengisi laporan.');
+    // Tanggal, shift, stok awal dan stok masuk diambil dari absen & penerimaan, bukan dari input.
+    const { att, awal, masuk } = ctx;
+    const date = att.work_date;
+    const shift = att.shift;
     const sales = cleanQty(c.body.sales);
     const money = cleanMoney(c.body.money);
-    const kas = cleanKas(c.body.kas);
     const soldMini = CHANNELS.reduce((s, k) => s + sales[k].mini, 0);
     const soldMedium = CHANNELS.reduce((s, k) => s + sales[k].medium, 0);
     const qris = MONEY_KEYS.reduce((s, k) => s + money[k].qris, 0);
@@ -423,31 +476,73 @@ const routes: Record<string, Handler> = {
     const sisaMini = int(c.body.sisaMini);
     const sisaMedium = int(c.body.sisaMedium);
     await q(
-      `INSERT INTO reports (branch_id, user_id, work_date, shift, awal_mini, awal_medium, masuk_mini, masuk_medium, sales, money, kas,
+      `INSERT INTO reports (branch_id, user_id, work_date, shift, awal_mini, awal_medium, masuk_mini, masuk_medium, sales, money,
          sold_mini, sold_medium, rev_qris, rev_cash, sisa_mini, sisa_medium, note)
-       VALUES ($1,$2,$3::date,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12,$13,$14,$15,$16,$17,$18)
+       VALUES ($1,$2,$3::date,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13,$14,$15,$16,$17)
        ON CONFLICT (branch_id, work_date, shift) DO UPDATE SET
          user_id = EXCLUDED.user_id, awal_mini = EXCLUDED.awal_mini, awal_medium = EXCLUDED.awal_medium,
          masuk_mini = EXCLUDED.masuk_mini, masuk_medium = EXCLUDED.masuk_medium, sales = EXCLUDED.sales, money = EXCLUDED.money,
-         kas = EXCLUDED.kas, sold_mini = EXCLUDED.sold_mini, sold_medium = EXCLUDED.sold_medium, rev_qris = EXCLUDED.rev_qris,
+         sold_mini = EXCLUDED.sold_mini, sold_medium = EXCLUDED.sold_medium, rev_qris = EXCLUDED.rev_qris,
          rev_cash = EXCLUDED.rev_cash, sisa_mini = EXCLUDED.sisa_mini, sisa_medium = EXCLUDED.sisa_medium, note = EXCLUDED.note,
          updated_at = now()`,
-      [bid, u.id, date, shift, int(c.body.awalMini), int(c.body.awalMedium), int(c.body.masukMini), int(c.body.masukMedium),
-        JSON.stringify(sales), JSON.stringify(money), JSON.stringify(kas), soldMini, soldMedium, qris, cash, sisaMini, sisaMedium, str(c.body.note, 1000)]
+      [bid, u.id, date, shift, awal.mini, awal.medium, masuk.mini, masuk.medium, JSON.stringify(sales), JSON.stringify(money),
+        soldMini, soldMedium, qris, cash, sisaMini, sisaMedium, str(c.body.note, 1000)]
     );
     // Sisa stok di laporan terbaru menjadi stok terkini cabang.
     const newer = await q1(`SELECT 1 AS x FROM reports WHERE branch_id = $1 AND (work_date, shift) > ($2::date, $3::int) LIMIT 1`, [bid, date, shift]);
     if (!newer) {
-      const hasRestock = Array.isArray(c.body.restock);
-      await q(
-        `UPDATE branches SET mini = $2, medium = $3, stock_updated_at = now(), stock_updated_by = $4,
-           restock = CASE WHEN $5::boolean THEN $6::jsonb ELSE restock END,
-           restock_updated_at = CASE WHEN $5::boolean THEN now() ELSE restock_updated_at END
-         WHERE id = $1`,
-        [bid, sisaMini, sisaMedium, u.name, hasRestock, JSON.stringify(cleanRestock(c.body.restock))]
-      );
+      await q(`UPDATE branches SET mini = $2, medium = $3, stock_updated_at = now(), stock_updated_by = $4 WHERE id = $1`, [bid, sisaMini, sisaMedium, u.name]);
       await logStock(bid, u.id, 'laporan', `Laporan ${date} shift ${shift}`);
     }
+    return { ok: true };
+  },
+
+  // ----- saldo cash cabang -----
+  'GET cash': async (c) => {
+    const bid = needBranch(c);
+    const [saldo, entries, incomes] = await Promise.all([
+      q1(`SELECT ${SALDO('$1')} AS saldo`, [bid]),
+      q(`${CASH_SELECT} WHERE c.branch_id = $1 ORDER BY c.created_at DESC LIMIT 60`, [bid]),
+      q(
+        `SELECT r.id, r.work_date::text AS work_date, r.shift, r.rev_cash AS amount, r.updated_at AS created_at, u.name AS user_name
+         FROM reports r LEFT JOIN users u ON u.id = r.user_id WHERE r.branch_id = $1 AND r.rev_cash > 0 ORDER BY r.work_date DESC, r.shift DESC LIMIT 60`,
+        [bid]
+      ),
+    ]);
+    return { saldo: saldo!.saldo, entries, incomes };
+  },
+
+  'POST cash': async (c) => {
+    const bid = needBranch(c);
+    const kind = ['setor', 'pakai', 'tambah'].includes(c.body.kind) ? c.body.kind : '';
+    const amount = int(c.body.amount);
+    const note = str(c.body.note, 200);
+    if (!kind) throw new HttpError(400, 'Pilih jenis transaksi.');
+    if (!amount) throw new HttpError(400, 'Isi jumlah uangnya.');
+    if (kind !== 'setor' && !note) throw new HttpError(400, 'Isi keterangannya.');
+    if (kind !== 'tambah') {
+      const s = await q1(`SELECT ${SALDO('$1')} AS saldo`, [bid]);
+      if (amount > s!.saldo) throw new HttpError(400, `Saldo cash hanya Rp${s!.saldo.toLocaleString('id-ID')}. Kalau ada uang lain di laci, catat dulu sebagai "Tambah saldo".`);
+    }
+    await q(`INSERT INTO cash_entries (branch_id, user_id, kind, amount, note) VALUES ($1,$2,$3,$4,$5)`, [bid, c.user!.id, kind, amount, note]);
+    return { ok: true };
+  },
+
+  'GET admin/cash': async (c) => {
+    needAdmin(c);
+    const { from, to, branch } = range(c);
+    return {
+      rows: await q(
+        `${CASH_SELECT} WHERE (c.created_at ${TZ})::date BETWEEN $1::date AND $2::date AND ($3::int IS NULL OR c.branch_id = $3)
+         ORDER BY c.created_at DESC LIMIT 1000`,
+        [from, to, branch]
+      ),
+    };
+  },
+
+  'POST admin/cash/delete': async (c) => {
+    needAdmin(c);
+    await q(`DELETE FROM cash_entries WHERE id = $1`, [int(c.body.id)]);
     return { ok: true };
   },
 
@@ -456,7 +551,7 @@ const routes: Record<string, Handler> = {
     needAdmin(c);
     const date = isDate(c.query.get('date')) ? c.query.get('date')! : todayWIB();
     const [branches, attendance, reports, shipments] = await Promise.all([
-      q(`SELECT ${BRANCH_COLS} FROM branches WHERE active ORDER BY is_pusat DESC, name`),
+      q(`SELECT ${BRANCH_COLS}, ${SALDO('branches.id')} AS saldo FROM branches WHERE active ORDER BY is_pusat DESC, name`),
       q(`${ATT_SELECT} WHERE a.work_date = $1::date OR (a.check_out IS NULL AND $1::date = $2::date) ORDER BY a.check_in`, [date, todayWIB()]),
       q(`${REP_SELECT} WHERE r.work_date = $1::date ORDER BY r.shift`, [date]),
       q(`${SHIP_SELECT} WHERE s.status = 'sent' ORDER BY s.created_at`),
@@ -489,7 +584,7 @@ const routes: Record<string, Handler> = {
     const co = c.body.checkOut ? new Date(c.body.checkOut) : null;
     if (isNaN(+ci) || (co && isNaN(+co))) throw new HttpError(400, 'Jam tidak valid.');
     if (co && co < ci) throw new HttpError(400, 'Jam keluar harus setelah jam masuk.');
-    await q(`UPDATE attendance SET check_in = $2, check_out = $3, work_date = ($2::timestamptz ${TZ})::date WHERE id = $1`, [
+    await q(`UPDATE attendance SET check_in = $2, check_out = $3, work_date = ($2::timestamptz ${TZ})::date, edited = TRUE WHERE id = $1`, [
       id,
       ci.toISOString(),
       co ? co.toISOString() : null,

@@ -94,6 +94,17 @@ CREATE TABLE IF NOT EXISTS reports (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (branch_id, work_date, shift)
 );
+CREATE TABLE IF NOT EXISTS cash_entries (
+  id SERIAL PRIMARY KEY,
+  branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  kind TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS edited BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE shipments ADD COLUMN IF NOT EXISTS item_list JSONB NOT NULL DEFAULT '[]'::jsonb;
 `;
 
 export const DEFAULT_BRANCHES: [string, boolean][] = [

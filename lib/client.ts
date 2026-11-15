@@ -83,10 +83,10 @@ export const fromLocalInput = (v: string) => (v ? new Date(v + ':00+07:00').toIS
 
 export const CHANNELS: [string, string][] = [
   ['shopee', 'Shopee'],
+  ['upselling', 'Upselling'],
+  ['offline', 'Offline'],
   ['grab', 'Grab'],
   ['gofood', 'GoFood'],
-  ['offline', 'Offline'],
-  ['upselling', 'Upselling'],
   ['repeat', 'Repeat order'],
 ];
 export const MONEY: [string, string][] = [
@@ -95,16 +95,21 @@ export const MONEY: [string, string][] = [
   ['repeat', 'Repeat order'],
   ['gift', 'Gift (lilin, kartu)'],
 ];
+/** Status stock opname. "aman" tidak disimpan — barang yang tidak ada di daftar dianggap aman. */
 export const LEVELS: [string, string][] = [
-  ['habis', 'Habis'],
-  ['sedikit', 'Sedikit lagi'],
+  ['aman', 'Aman'],
   ['sedang', 'Sedang'],
+  ['sedikit', 'Sedikit'],
+  ['habis', 'Habis'],
 ];
-export const RESTOCK_ITEMS = [
-  'Choco crunchy', 'Tiramisu crunchy', 'Keju', 'Sendok', 'Lilin', 'Tisu', 'Ripet', 'Kartu thank you', 'Kartu ucapan',
-  'Plastik biru sedang', 'Plastik biru besar', 'Selai matcha', 'Selai coklat', 'Selai blueberry', 'Selai strawberry',
-  'Selai caramel', 'Selai red velvet', 'Selai lotus', 'Crumble oreo', 'Crumble lotus', 'Crumble matcha', 'Crumble red velvet', 'Brownies',
+export const CATALOG: [string, string[]][] = [
+  ['Topping', ['Choco crunchy', 'Tiramisu crunchy', 'Keju', 'Brownies']],
+  ['Crumble', ['Crumble oreo', 'Crumble lotus', 'Crumble matcha', 'Crumble red velvet', 'Crumble caramel']],
+  ['Selai', ['Selai coklat', 'Selai matcha', 'Selai blueberry', 'Selai strawberry', 'Selai caramel', 'Selai red velvet', 'Selai lotus', 'Selai cappuccino', 'Selai peanut']],
+  ['Perplastikan', ['Sendok', 'Ripet', 'Tisu', 'Plastik biru sedang', 'Plastik biru besar']],
+  ['Additional', ['Lilin', 'Kartu thank you', 'Kartu ucapan', 'Kartu birthday', 'Emoji kacamata', 'Emoji birthday']],
 ];
+export const CASH_KINDS: Record<string, string> = { setor: 'Setor ke pusat', pakai: 'Dipakai', tambah: 'Tambah saldo' };
 
 export function downloadCsv(name: string, rows: (string | number)[][]) {
   const esc = (v: string | number) => {

@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
-import { fmtDate, fmtDateTime, fmtTime, usePoll } from '@/lib/client';
+import { fmtDate, fmtDateTime, fmtTime, rupiah, usePoll } from '@/lib/client';
+import { CountUp } from '@/components/fx';
 import { Card, H, Loading, Msg, RestockChips, StockBig } from '@/components/ui';
 
 export default function Home() {
   const { data, error } = usePoll<any>('home');
   if (!data) return error ? <Msg error={error} /> : <Loading />;
-  const { branch, open, onDuty, pending, reports } = data;
+  const { branch, open, onDuty, pending, reports, others } = data;
   return (
     <>
       <Msg error={error} />
@@ -59,10 +60,37 @@ export default function Home() {
         <Link href="/laporan" className="sticker-sm btn-pop mt-3 flex min-h-12 items-center justify-center rounded-full bg-white font-display text-[15px] font-extrabold">Isi laporan harian</Link>
       </Card>
 
-      <Card>
-        <H>Perlu restock</H>
-        <RestockChips list={branch.restock} />
-      </Card>
+      <Link href="/laporan?tab=cash" className="sticker btn-pop block rounded-3xl bg-white p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="text-[11px] font-extrabold uppercase tracking-widest text-muted">Saldo cash di cabang</div>
+            <div className="num text-3xl tabular-nums"><CountUp value={data.saldo} format={rupiah} /></div>
+          </div>
+          <span className="rounded-full bg-ink px-3 py-1.5 font-display text-xs font-extrabold text-brand">Setor / pakai</span>
+        </div>
+      </Link>
+
+      {branch.is_pusat ? (
+        <Card>
+          <H right={<Link href="/stok" className="text-sm font-semibold text-ink underline decoration-brand decoration-2 underline-offset-2">Kirim</Link>}>Kondisi cabang</H>
+          <ul className="divide-y divide-line">
+            {others.map((b: any) => (
+              <li key={b.id} className="py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-display font-extrabold">{b.name}</span>
+                  <span className="text-sm tabular-nums"><b>{b.mini}</b> mini · <b>{b.medium}</b> medium</span>
+                </div>
+                <div className="mt-1"><RestockChips list={b.restock} /></div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : (
+        <Card>
+          <H right={<Link href="/stok" className="text-sm font-semibold text-ink underline decoration-brand decoration-2 underline-offset-2">Ubah</Link>}>Perlu restock</H>
+          <RestockChips list={branch.restock} />
+        </Card>
+      )}
     </>
   );
 }

@@ -6,11 +6,16 @@ Aplikasi web mobile untuk laporan dan rekap operasional cabang Cizquake, penggan
 
 **Karyawan cabang** (login dengan username + password, cabang ditentukan admin)
 
-- Beranda: stok terkini mini box dan medium box, kiriman yang menunggu, status absen, laporan hari ini.
-- Absen: check in / check out per shift, jam dicatat otomatis oleh server (WIB).
-- Stok: update stok dan daftar "perlu restock", konfirmasi penerimaan kiriman, kirim barang ke cabang lain.
-- Laporan harian: stok awal, stok masuk, terjual per channel (Shopee, Grab, GoFood, offline, upselling, repeat order),
-  uang masuk QRIS/cash, sisa stok, uang cash dan saldo GoPay, catatan.
+- Beranda: stok terkini mini box dan medium box, kiriman yang menunggu, status absen, laporan hari ini, saldo cash.
+- Absen: check in / check out per shift, jam dicatat otomatis (WIB) dan bisa diedit sendiri sampai 3 hari ke belakang
+  (absen yang diedit diberi tanda).
+- Stok, cabang biasa: ketuk angka mini/medium untuk mengubah stok, stock opname per kategori
+  (topping, crumble, selai, perplastikan, additional) dengan status aman/sedang/sedikit/habis, dan penerimaan kiriman
+  dengan checklist per barang.
+- Stok, cabang pusat: hanya mengirim barang ke cabang lain.
+- Laporan harian: tanggal, shift, stok awal, dan stok masuk terisi otomatis dari absen dan penerimaan. Karyawan mengisi
+  stok terjual per channel dan uang masuk QRIS/cash.
+- Saldo cash: bertambah dari penjualan cash di laporan, berkurang saat disetor ke pusat atau dipakai belanja.
 
 **Admin**
 

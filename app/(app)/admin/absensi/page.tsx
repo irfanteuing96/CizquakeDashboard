@@ -32,8 +32,8 @@ export default function AdminAbsensi() {
         <>
           <Card>
             <H right={<Btn variant="ghost" small disabled={!rows.length} onClick={() => downloadCsv(`absensi_${range.from}_${range.to}.csv`, [
-              ['Tanggal', 'Nama', 'Cabang', 'Shift', 'Masuk', 'Keluar', 'Durasi (jam)', 'Catatan'],
-              ...rows.map((a) => [a.work_date, a.user_name, a.branch_name, a.shift, fmtTime(a.check_in), a.check_out ? fmtTime(a.check_out) : '', hoursBetween(a.check_in, a.check_out).toFixed(2), a.note]),
+              ['Tanggal', 'Nama', 'Cabang', 'Shift', 'Masuk', 'Keluar', 'Durasi (jam)', 'Diedit', 'Catatan'],
+              ...rows.map((a) => [a.work_date, a.user_name, a.branch_name, a.shift, fmtTime(a.check_in), a.check_out ? fmtTime(a.check_out) : '', hoursBetween(a.check_in, a.check_out).toFixed(2), a.edited ? 'ya' : '', a.note]),
             ])}>Unduh CSV</Btn>}>Rekap per karyawan</H>
             {recap.length === 0 ? <p className="text-sm text-muted">Tidak ada absen di rentang ini.</p> : (
               <div className="overflow-x-auto">
@@ -61,7 +61,7 @@ export default function AdminAbsensi() {
                   <button className="flex w-full items-center justify-between gap-2 py-2 text-left" onClick={() => setEdit(edit?.id === a.id ? null : { id: a.id, checkIn: toLocalInput(a.check_in), checkOut: toLocalInput(a.check_out) })}>
                     <div className="min-w-0">
                       <div className="font-medium">{a.user_name} <span className="font-normal text-muted">· {a.branch_name} · shift {a.shift}</span></div>
-                      <div className="truncate text-xs text-muted">{fmtDate(a.work_date)}{a.note ? ` · ${a.note}` : ''}</div>
+                      <div className="truncate text-xs text-muted">{fmtDate(a.work_date)}{a.edited ? ' · ✏️ diedit' : ''}{a.note ? ` · ${a.note}` : ''}</div>
                     </div>
                     <div className="shrink-0 text-right tabular-nums">
                       <div>{fmtTime(a.check_in)} – {a.check_out ? fmtTime(a.check_out) : <span className="text-amber-700">belum</span>}</div>
