@@ -15,7 +15,9 @@ Aplikasi web mobile untuk laporan dan rekap operasional cabang Cizquake, penggan
 - Stok, cabang pusat: hanya mengirim barang ke cabang lain.
 - Laporan harian: tanggal, shift, stok awal, dan stok masuk terisi otomatis dari absen dan penerimaan. Karyawan mengisi
   stok terjual per channel dan uang masuk QRIS/cash.
-- Saldo cash: bertambah dari penjualan cash di laporan, berkurang saat disetor ke pusat atau dipakai belanja.
+- Kas (menu sendiri): saldo cash cabang, uang masuk/keluar hari ini, catat setoran ke pusat (dikonfirmasi admin),
+  pemakaian, dan tambahan saldo. Saldo bertambah otomatis dari penjualan cash di laporan.
+- Akun: lewat tombol inisial nama di pojok kanan atas.
 
 **Admin**
 

@@ -60,7 +60,7 @@ export default function Home() {
         <Link href="/laporan" className="sticker-sm btn-pop mt-3 flex min-h-12 items-center justify-center rounded-full bg-white font-display text-[15px] font-extrabold">Isi laporan harian</Link>
       </Card>
 
-      <Link href="/laporan?tab=cash" className="sticker btn-pop block rounded-3xl bg-white p-4">
+      <Link href="/kas" className="sticker btn-pop block rounded-3xl bg-white p-4">
         <div className="flex items-center justify-between gap-2">
           <div>
             <div className="text-[11px] font-extrabold uppercase tracking-widest text-muted">Saldo cash di cabang</div>

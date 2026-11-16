@@ -21,6 +21,7 @@ const ICONS: Record<string, string> = {
   note: 'M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 0v5h5M9 13h6M9 17h4',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9c0-3.6 3.6-6 8-6s8 2.4 8 6',
   chart: 'M4 20V10m6 10V4m6 16v-7m4 7H2',
+  wallet: 'M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V17a2 2 0 0 0 2 2h14V8H6.5A2.5 2.5 0 0 1 4 7.5zM16.5 13.5h.01',
   coin: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm2.5 6.2c-.4-.8-1.3-1.2-2.5-1.2-1.5 0-2.6.7-2.6 1.9 0 2.8 5.3 1.3 5.3 4.1 0 1.2-1.1 2-2.7 2-1.3 0-2.3-.5-2.8-1.4M12 6.5V8m0 8v1.5',
   truck: 'M2 6h11v10H2zm11 4h4.5L21 13.5V16h-8zM6.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm10.5 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
   gear: 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19 12a7 7 0 0 0-.1-1.3l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2.3-1.3L14 3h-4l-.3 2.5a7 7 0 0 0-2.3 1.3l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2.6l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2.3 1.3L10 21h4l.3-2.5a7 7 0 0 0 2.3-1.3l2.3 1 2-3.4-2-1.5c.1-.4.1-.9.1-1.3z',
@@ -38,7 +39,7 @@ const STAFF_NAV = [
   ['/absen', 'Absen', 'clock'],
   ['/stok', 'Stok', 'box'],
   ['/laporan', 'Laporan', 'note'],
-  ['/akun', 'Akun', 'user'],
+  ['/kas', 'Kas', 'wallet'],
 ];
 const ADMIN_NAV = [
   ['/admin', 'Ringkasan', 'chart'],
@@ -95,7 +96,11 @@ export default function Shell({ children }: { children: ReactNode }) {
             </div>
             {isAdmin ? (
               <button className="press rounded-full border-2 border-ink bg-ink px-3 py-1.5 font-display text-xs font-extrabold text-brand" onClick={async () => { await api('logout', {}); router.replace('/login'); }}>Keluar</button>
-            ) : null}
+            ) : (
+              <Link href="/akun" aria-label="Akun" aria-current={path === '/akun' ? 'page' : undefined} className={`press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-ink font-display text-lg font-extrabold ${path === '/akun' ? 'bg-ink text-brand' : 'bg-white text-ink'}`}>
+                {me.user.name.trim().charAt(0).toUpperCase() || '?'}
+              </Link>
+            )}
           </div>
           <div className="overflow-hidden border-y-2 border-ink bg-ink py-1.5" aria-hidden>
             <div className="marquee font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-brand">
